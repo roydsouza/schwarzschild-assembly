@@ -1,0 +1,31 @@
+# Rust build artifacts
+safety-rail/target/
+*/target/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Node.js
+control-panel/node_modules/
+.next/
+
+# Go build
+root-spine/bin/
+
+# OTel runtime files (written at runtime, not source artifacts)
+otel-snapshots/telemetry.jsonl
+otel-snapshots/collector.log
+otel-snapshots/collector.pid
+
+# Environment
+.env
+.envrc
+*.local
+
+# macOS
+.DS_Store
