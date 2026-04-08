@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_type": "fitness_vector",
+  "initialized": false,
+  "note": "This file is written by the OTel file exporter and the root-spine snapshot writer. Each line is a complete OTLP JSON export. Components read the last valid line for current fitness state. This placeholder is replaced on first OTel collector run.",
+  "timestamp_ms": 0,
+  "metrics": {}
+}
