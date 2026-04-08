@@ -13,7 +13,7 @@ path = "src/lib.rs"
 [features]
 default = ["tier1"]
 # Tier 1: Z3 + Wasmtime (required for production)
-tier1 = ["dep:z3", "dep:wasmtime"]
+tier1 = ["dep:z3", "dep:wasmtime", "dep:wasmtime-wasi"]
 # Tier 2: Tier 1 + rocq-of-rust proofs (optional upgrade path)
 # TODO(proposals/pending/): implement Tier 2 once Tier 1 is verified
 tier2 = ["tier1"]
@@ -26,6 +26,7 @@ z3 = { version = "0.12", optional = true }
 # Wasmtime — sandboxed WASM execution for Tier 1
 # Pinned to 25.x: stable API for component model + WASI p2
 wasmtime = { version = "25", optional = true, features = ["component-model", "cranelift"] }
+wasmtime-wasi = { version = "25", optional = true }
 
 # SHA-256 for payload and fingerprint hashing
 # sha2 is the canonical choice; ring is faster but requires C build tooling
@@ -34,9 +35,21 @@ sha2 = "0.10"
 # Structured error context
 thiserror = "1"
 
+# JSON deserialization for ProposalPayload and canonical JSON hash verification
+# Pinned: 1.x is stable; no breaking changes expected at minor version
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# OpenTelemetry — for fitness vector metric emission
+# Pinned to 0.21/0.14 for stability with opentelemetry-proto
+opentelemetry = { version = "0.21", features = ["metrics"] }
+opentelemetry-otlp = { version = "0.14", features = ["metrics"] }
+
 [dev-dependencies]
 # For property-based testing of trait contract compliance
 proptest = "1"
+# For compiling human-readable .wat test assets to .wasm
+wat = "1.0"
 
 [profile.release]
 # M5-optimized: native CPU features including AMX, NEON, SVE

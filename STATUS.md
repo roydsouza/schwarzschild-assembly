@@ -1,5 +1,34 @@
 # Sati-Central — Operational Status
 
+## 2026-04-08 20:55:00 UTC — Worker Droid (AntiGravity)
+**Phase:** 2 — Safety Rail Tier 1 (Documentation Layer)
+**Status:** COMPLETE — Documentation substrate established.
+**Active Agent:** AntiGravity
+**What was completed:**
+- Created `README.md` (Strategic overview & "Schwarzschild" narrative).
+- Created `LICENSE` (Apache License 2.0).
+- Synchronized documentation with `CLAUDE.md` prime directives.
+**Blockers:** None
+**Next action:** Begin Step 1 — Dependency Setup in safety-rail/Cargo.toml.
+
+---
+
+## 2026-04-08 13:41:20 UTC — Worker Droid (AntiGravity)
+**Phase:** 2 — Safety Rail Tier 1
+**Status:** IN PROGRESS
+**Active Agent:** AntiGravity
+**What was completed:**
+- Step 0 COMPLETE: Bootstrap and environment verification.
+- Resolved Homebrew PATH issues for ARM64 Darwin.
+- Fixed OTel collector config (port conflict 8888).
+- Fixed OTel collector installation (manual binary download for v0.120.0).
+- Fixed smoke_test.sh syntax error in JSON validation.
+- Smoke test passed successfully: Phase 1 observability substrate is operational.
+**Blockers:** None
+**Next action:** Step 1 — Dependency Setup in safety-rail/Cargo.toml.
+
+---
+
 Live status log. AntiGravity prepends a new entry after every significant action.
 Claude Code reads this before each sync session to understand current state.
 

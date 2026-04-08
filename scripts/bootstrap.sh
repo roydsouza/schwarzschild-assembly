@@ -12,6 +12,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Ensure Homebrew and Go binaries are in PATH
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+if command -v go &>/dev/null; then
+  export PATH="$(go env GOPATH)/bin:$PATH"
+fi
+
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -133,12 +139,33 @@ echo "── OpenTelemetry Collector ──"
 if ! command -v otelcol-contrib &>/dev/null; then
   warn "otelcol-contrib not found"
   if [[ "$CHECK_ONLY" == true ]]; then
-    fail "otelcol-contrib: not installed (would install via: brew install opentelemetry-collector)"
+    fail "otelcol-contrib: not installed (would download binary)"
     ERRORS=$((ERRORS + 1))
   else
-    info "Installing OpenTelemetry Collector Contrib..."
-    brew install opentelemetry-collector
-    ok "otelcol-contrib: $(otelcol-contrib --version 2>/dev/null | head -1)"
+    info "Installing OpenTelemetry Collector Contrib binary..."
+    # Download official binary for Darwin ARM64
+    OTEL_VERSION="0.120.0"
+    OTEL_URL="https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${OTEL_VERSION}/otelcol-contrib_${OTEL_VERSION}_darwin_arm64.tar.gz"
+    
+    info "Downloading otelcol-contrib v${OTEL_VERSION}..."
+    curl -L -o otelcol.tar.gz "${OTEL_URL}"
+    tar -xzf otelcol.tar.gz otelcol-contrib
+    chmod +x otelcol-contrib
+    
+    # Try to move to /opt/homebrew/bin if possible, otherwise keep in root for now
+    if [[ -w "/opt/homebrew/bin" ]]; then
+      mv otelcol-contrib /opt/homebrew/bin/
+      rm otelcol.tar.gz
+      ok "otelcol-contrib: installed to /opt/homebrew/bin/"
+    else
+      warn "Cannot write to /opt/homebrew/bin — keeping otelcol-contrib in project root"
+      # PATH update at top of script will ensure it's found if we add . to PATH or move it to a known dir
+      mkdir -p bin
+      mv otelcol-contrib bin/
+      rm otelcol.tar.gz
+      export PATH="$PROJECT_ROOT/bin:$PATH"
+      ok "otelcol-contrib: installed to ./bin/"
+    fi
   fi
 else
   ok "otelcol-contrib: $(otelcol-contrib --version 2>/dev/null | head -1)"
@@ -149,6 +176,9 @@ echo ""
 # ── 4. PostgreSQL ─────────────────────────────────────────────────────────────
 echo "── PostgreSQL ──"
 
+# Ensure PostgreSQL and other brew opt binaries are in PATH
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+
 if ! command -v psql &>/dev/null; then
   warn "psql not found"
   if [[ "$CHECK_ONLY" == true ]]; then
@@ -157,8 +187,12 @@ if ! command -v psql &>/dev/null; then
   else
     info "Installing PostgreSQL 16 via Homebrew..."
     brew install postgresql@16
-    brew services start postgresql@16
-    ok "PostgreSQL 16: installed and started"
+    # Try brew services, but fallback to manual pg_ctl if it fails
+    if ! brew services start postgresql@16 2>/dev/null; then
+       warn "brew services failed to start postgresql — attempting manual start..."
+       pg_ctl -D /opt/homebrew/var/postgresql@16 start || true
+    fi
+    ok "PostgreSQL 16: installed and attempted start"
   fi
 else
   PG_VERSION=$(psql --version | grep -o '[0-9]*\.[0-9]*' | head -1)

@@ -16,6 +16,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
+# Ensure Homebrew and Go binaries are in PATH
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+if command -v go &>/dev/null; then
+  export PATH="$(go env GOPATH)/bin:$PATH"
+fi
+
 # ── Colors ────────────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}  ✓${RESET} $*"; }
@@ -168,7 +174,7 @@ if [[ "$OTEL_RUNNING" == true ]]; then
   else
     # Verify it contains JSON (collector may write JSONL; check last non-empty line)
     LAST_LINE=$(grep -v '^$' "$LATEST" | tail -1)
-    if python3 -c "import json; json.loads('${LAST_LINE//\'/\'\\\'\'}'" 2>/dev/null || \
+    if python3 -c "import json, sys; json.loads(sys.stdin.read())" <<< "$LAST_LINE" 2>/dev/null || \
        python3 -c "import json; json.load(open('${LATEST}'))" 2>/dev/null; then
       ok "otel-snapshots/latest.json: contains valid JSON"
 

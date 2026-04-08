@@ -144,4 +144,4 @@ service:
       output_paths: ["./otel-snapshots/collector.log"]
     metrics:
       level: basic
-      address: 0.0.0.0:8888
+      address: 0.0.0.0:18888
