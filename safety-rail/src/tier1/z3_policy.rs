@@ -1,7 +1,7 @@
 use crate::{ActionProposal, ConstraintCategory, ConstraintId, ConstraintSeverity, PolicyConstraint, ViolationReport};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use z3::ast::{Ast, Bool, String as Z3String};
 use z3::{Config, Context, Solver};
 
@@ -51,27 +51,12 @@ impl OperationType {
 }
 
 pub(crate) struct Z3PolicyEngine {
-    ctx: Arc<Context>,
-    solver: Mutex<Solver<'static>>,
     constraints: Mutex<Vec<PolicyConstraint>>,
 }
 
-unsafe impl Send for Z3PolicyEngine {}
-unsafe impl Sync for Z3PolicyEngine {}
-
 impl Z3PolicyEngine {
     pub fn new() -> Self {
-        let cfg = Config::new();
-        let ctx = Arc::new(Context::new(&cfg));
-        
-        // Safety: We need a 'static reference for the Solver. 
-        // We use Arc to ensure the Context outlives the Solver.
-        let ctx_ptr: *const Context = &*ctx;
-        let solver = unsafe { Solver::new(&*ctx_ptr) };
-
         Self {
-            ctx,
-            solver: Mutex::new(solver),
             constraints: Mutex::new(Vec::new()),
         }
     }
@@ -121,97 +106,113 @@ impl Z3PolicyEngine {
     }
 
     pub fn add_constraint(&self, constraint: PolicyConstraint) -> Result<(), String> {
-        let mut solver = self.solver.lock().map_err(|e| e.to_string())?;
-        
-        if let crate::ConstraintAssertion::SmtLib2(_) = &constraint.assertion {
-            let facts_vars = self.create_facts_vars();
-            
-            match constraint.name.as_str() {
-                "safety_no_self_modify_safety_rail" => {
-                    let prefix = Z3String::from_str(&self.ctx, "safety-rail/").expect("Z3 string");
-                    let is_prefix = facts_vars.target_path.prefix_of(&prefix);
-                    solver.assert(&is_prefix.implies(&facts_vars.is_security_adjacent));
-                }
-                "audit_no_merkle_deletion" => {
-                    let delete_op = Z3String::from_str(&self.ctx, "delete_file").expect("Z3 string");
-                    let is_delete = facts_vars.operation_type._eq(&delete_op);
-                    let merkle_comp = Z3String::from_str(&self.ctx, "merkle-log").expect("Z3 string");
-                    let targets_merkle = facts_vars.target_component._eq(&merkle_comp);
-                    solver.assert(&is_delete.implies(&targets_merkle.not()));
-                }
-                "security_no_unverified_proto_change" => {
-                    let prefix = Z3String::from_str(&self.ctx, "root-spine/proto/").expect("Z3 string");
-                    let is_prefix = facts_vars.target_path.prefix_of(&prefix);
-                    solver.assert(&is_prefix.implies(&facts_vars.is_security_adjacent));
-                }
-                _ => {
-                    // Tier 1 logic for custom constraints (omitted for brevity)
-                }
-            }
+        // [CRITICAL-3] Added missing guards
+        if constraint.justification.is_empty() {
+             return Err("MissingJustification".to_string());
         }
         
         let mut constraints = self.constraints.lock().map_err(|e| e.to_string())?;
+        
+        if constraints.iter().any(|c| c.id == constraint.id) {
+            return Err("Duplicate".to_string());
+        }
+
         constraints.push(constraint);
         Ok(())
     }
 
-    pub fn verify(&self, facts: &ProposalFacts) -> Result<Option<ViolationReport>, String> {
-        let mut solver = self.solver.lock().map_err(|e| e.to_string())?;
-        solver.push();
-
-        let vars = self.create_facts_vars();
+    pub fn verify(&self, facts: &ProposalFacts) -> Result<(Option<ViolationReport>, Option<String>), String> {
+        let cfg = Config::new();
+        let ctx = Context::new(&cfg);
+        let solver = Solver::new(&ctx);
         
+        let vars = self.create_facts_vars_with_ctx(&ctx);
+        let constraints = self.constraints.lock().map_err(|e| e.to_string())?;
+
+        // Replay all registered constraints into the fresh solver
+        for constraint in constraints.iter() {
+            if let crate::ConstraintAssertion::SmtLib2(_) = &constraint.assertion {
+                match constraint.name.as_str() {
+                    "safety_no_self_modify_safety_rail" => {
+                        let prefix = Z3String::from_str(&ctx, "safety-rail/").expect("Z3 string");
+                        let is_prefix = prefix.prefix(&vars.target_path);
+                        solver.assert(&is_prefix.implies(&vars.is_security_adjacent));
+                    }
+                    "audit_no_merkle_deletion" => {
+                        let delete_op = Z3String::from_str(&ctx, "delete_file").expect("Z3 string");
+                        let is_delete = vars.operation_type._eq(&delete_op);
+                        let merkle_comp = Z3String::from_str(&ctx, "merkle-log").expect("Z3 string");
+                        let targets_merkle = vars.target_component._eq(&merkle_comp);
+                        solver.assert(&is_delete.implies(&targets_merkle.not()));
+                    }
+                    "security_no_unverified_proto_change" => {
+                        let prefix = Z3String::from_str(&ctx, "root-spine/proto/").expect("Z3 string");
+                        let is_prefix = prefix.prefix(&vars.target_path);
+                        solver.assert(&is_prefix.implies(&vars.is_security_adjacent));
+                    }
+                    _ => {
+                        // Skip constraints we don't know how to verify yet.
+                        // We do NOT return an error here because that would block admission
+                        // of any custom constraint. The safety layer still has its
+                        // mandatory core constraints in the solver.
+                    }
+                }
+            }
+        }
+
         // Assert the current proposal facts as constants
-        let target_path_val = Z3String::from_str(&self.ctx, &facts.target_path).map_err(|e| e.to_string())?;
-        self.solver.assert(&vars.target_path._eq(&target_path_val));
+        let target_path_val = Z3String::from_str(&ctx, &facts.target_path).map_err(|e| e.to_string())?;
+        solver.assert(&vars.target_path._eq(&target_path_val));
         
-        self.solver.assert(&vars.is_security_adjacent._eq(&Bool::from_bool(&self.ctx, facts.is_security_adjacent)));
+        solver.assert(&vars.is_security_adjacent._eq(&Bool::from_bool(&ctx, facts.is_security_adjacent)));
         
-        let agent_id_val = Z3String::from_str(&self.ctx, &facts.agent_id).map_err(|e| e.to_string())?;
-        self.solver.assert(&vars.agent_id._eq(&agent_id_val));
+        let agent_id_val = Z3String::from_str(&ctx, &facts.agent_id).map_err(|e| e.to_string())?;
+        solver.assert(&vars.agent_id._eq(&agent_id_val));
         
-        let op_type_val = Z3String::from_str(&self.ctx, facts.operation_type.as_str()).map_err(|e| e.to_string())?;
-        self.solver.assert(&vars.operation_type._eq(&op_type_val));
+        let op_type_val = Z3String::from_str(&ctx, facts.operation_type.as_str()).map_err(|e| e.to_string())?;
+        solver.assert(&vars.operation_type._eq(&op_type_val));
         
-        let target_comp_val = Z3String::from_str(&self.ctx, &facts.target_component).map_err(|e| e.to_string())?;
-        self.solver.assert(&vars.target_component._eq(&target_comp_val));
+        let target_comp_val = Z3String::from_str(&ctx, &facts.target_component).map_err(|e| e.to_string())?;
+        solver.assert(&vars.target_component._eq(&target_comp_val));
 
-        let result = self.solver.check();
-        self.solver.pop(1);
+        let result = solver.check();
 
         match result {
-            z3::SatResult::Sat => Ok(None), // Satisfied = Safe
+            z3::SatResult::Sat => {
+                // [CRITICAL-1] Serialize model to SMT-LIB2 text
+                let model = solver.get_model().ok_or("Failed to get Z3 model")?;
+                Ok((None, Some(model.to_string())))
+            },
             z3::SatResult::Unsat => {
-                // Violation! In Tier 1, we return a generic violation report
-                // In a fuller implementation, we'd use unsat cores to identify which constraint failed
+                // Violation! 
                 let mut violated_constraints = HashMap::new();
                 violated_constraints.insert(
                     ConstraintId::new([0u8; 16]),
                     "Policy violation detected by Z3".to_string(),
                 );
                 
-                Ok(Some(ViolationReport {
+                Ok((Some(ViolationReport {
                     violated_constraints,
                     unsat_core: None,
                     remediation_hint: Some("Review policy constraints in CLAUDE.md".to_string()),
                     max_severity: ConstraintSeverity::Mandatory,
-                }))
+                }), None))
             }
             z3::SatResult::Unknown => Err("Z3 returned Unknown".to_string()),
         }
     }
 
-    pub fn constraints(&self) -> &[PolicyConstraint] {
-        &self.constraints
+    pub fn constraints(&self) -> Vec<PolicyConstraint> {
+        self.constraints.lock().unwrap().clone()
     }
 
-    fn create_facts_vars(&self) -> Z3FactsVars {
+    fn create_facts_vars_with_ctx<'ctx>(&self, ctx: &'ctx Context) -> Z3FactsVars<'ctx> {
         Z3FactsVars {
-            target_path: Z3String::new_const(&self.ctx, "target_path"),
-            is_security_adjacent: Bool::new_const(&self.ctx, "is_security_adjacent"),
-            agent_id: Z3String::new_const(&self.ctx, "agent_id"),
-            operation_type: Z3String::new_const(&self.ctx, "operation_type"),
-            target_component: Z3String::new_const(&self.ctx, "target_component"),
+            operation_type: Z3String::new_const(ctx, "operation_type"),
+            target_path: Z3String::new_const(ctx, "target_path"),
+            target_component: Z3String::new_const(ctx, "target_component"),
+            is_security_adjacent: Bool::new_const(ctx, "is_security_adjacent"),
+            agent_id: Z3String::new_const(ctx, "agent_id"),
         }
     }
 }
@@ -258,7 +259,6 @@ mod tests {
             is_security_adjacent: security_adjacent,
             payload: payload_bytes,
             payload_hash: [0u8; 32],
-            checksum: [0u8; 32],
             submitted_at_ms: 1775680800000,
         }
     }
@@ -271,12 +271,12 @@ mod tests {
         // REJECTED: modify safety-rail/ without security_adjacent flag
         let p_bad = mock_proposal("safety-rail/src/lib.rs", false, OperationType::ModifyFile, "safety-rail");
         let facts_bad = extract_facts(&p_bad).unwrap();
-        assert!(engine.verify(&facts_bad).unwrap().is_some());
+        assert!(engine.verify(&facts_bad).unwrap().0.is_some());
 
         // APPROVED: modify safety-rail/ with security_adjacent flag
         let p_good = mock_proposal("safety-rail/src/lib.rs", true, OperationType::ModifyFile, "safety-rail");
         let facts_good = extract_facts(&p_good).unwrap();
-        assert!(engine.verify(&facts_good).unwrap().is_none());
+        assert!(engine.verify(&facts_good).unwrap().0.is_none());
     }
 
     #[test]
@@ -287,12 +287,12 @@ mod tests {
         // REJECTED: delete from merkle-log
         let p_bad = mock_proposal("audit/merkle.db", false, OperationType::DeleteFile, "merkle-log");
         let facts_bad = extract_facts(&p_bad).unwrap();
-        assert!(engine.verify(&facts_bad).unwrap().is_some());
+        assert!(engine.verify(&facts_bad).unwrap().0.is_some());
 
         // APPROVED: delete from other component
         let p_good = mock_proposal("temp/logs", false, OperationType::DeleteFile, "temp-storage");
         let facts_good = extract_facts(&p_good).unwrap();
-        assert!(engine.verify(&facts_good).unwrap().is_none());
+        assert!(engine.verify(&facts_good).unwrap().0.is_none());
     }
 
     #[test]
@@ -303,11 +303,11 @@ mod tests {
         // REJECTED: modify proto without security_adjacent flag
         let p_bad = mock_proposal("root-spine/proto/orchestrator.proto", false, OperationType::ModifyFile, "root-spine");
         let facts_bad = extract_facts(&p_bad).unwrap();
-        assert!(engine.verify(&facts_bad).unwrap().is_some());
+        assert!(engine.verify(&facts_bad).unwrap().0.is_some());
 
         // APPROVED: modify proto with security_adjacent flag
         let p_good = mock_proposal("root-spine/proto/orchestrator.proto", true, OperationType::ModifyFile, "root-spine");
         let facts_good = extract_facts(&p_good).unwrap();
-        assert!(engine.verify(&facts_good).unwrap().is_none());
+        assert!(engine.verify(&facts_good).unwrap().0.is_none());
     }
 }

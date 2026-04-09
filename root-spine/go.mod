@@ -7,30 +7,30 @@ go 1.26
 // Pinned versions are mandatory — no floating major versions.
 
 require (
-	// gRPC and Protobuf runtime — core transport layer
-	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.2
-
-	// OpenTelemetry Go SDK — all instrumentation paths use this
-	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/sdk v1.28.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.28.0
-
-	// PostgreSQL driver — state persistence for non-critical assets
-	github.com/jackc/pgx/v5 v5.6.0
-
-	// WebSocket — signaling plane for control-panel
-	github.com/gorilla/websocket v1.5.3
-
-	// Structured logging — JSON format per architecture requirements
-	go.uber.org/zap v1.27.0
 
 	// UUID v7 — time-ordered identifiers for all events
 	github.com/google/uuid v1.6.0
 
-	// RFC 8785 canonical JSON — required for Merkle leaf serialization
-	github.com/cyberphone/json-canonicalization v0.0.0-20231217082505-2617cb25e073
+	// PostgreSQL driver — state persistence for non-critical assets
+	github.com/jackc/pgx/v5 v5.6.0
+
+	// Structured logging — JSON format per architecture requirements
+	go.uber.org/zap v1.27.0
+	// gRPC and Protobuf runtime — core transport layer
+	google.golang.org/grpc v1.64.0
+	google.golang.org/protobuf v1.34.2
+)
+
+require (
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 )

@@ -1,0 +1,193 @@
+.gate {
+  border: 1px solid var(--border-muted);
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.meta {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-muted);
+}
+
+.status_safe { color: var(--safety-safe); border-color: var(--safety-safe); }
+.status_unsafe { color: var(--safety-unsafe); border-color: var(--safety-unsafe); }
+.status_checking { color: var(--safety-info); border-color: var(--safety-info); border-style: dashed; }
+
+.icon {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.description {
+  color: var(--text-primary);
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.path {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.code {
+  color: var(--safety-info);
+}
+
+.verdictContent {
+  margin-top: 8px;
+}
+
+.metric {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.error {
+  margin-top: 8px;
+  color: var(--safety-unsafe);
+  font-size: 11px;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.reflection {
+  margin-top: 8px;
+}
+
+.score {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--safety-info);
+}
+
+.reasoning {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.footer {
+  padding: 16px;
+  background-color: var(--bg-tertiary);
+  border-top: 1px solid var(--border-muted);
+}
+
+.signatureRow {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.signatureText {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.actions button {
+  padding: 8px 16px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.actions button:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+.denyButton {
+  color: var(--safety-unsafe) !important;
+}
+
+.denyButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--safety-unsafe) !important;
+}
+
+.approveButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.approveButton:not(:disabled) {
+  background: var(--safety-safe) !important;
+  color: var(--bg-primary) !important;
+  border-color: var(--safety-safe) !important;
+}
+
+.analystLayer {
+  padding: 0 1px;
+}
+
+.analystPending {
+  padding: 16px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-muted);
+  border-bottom: 1px solid var(--border-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}

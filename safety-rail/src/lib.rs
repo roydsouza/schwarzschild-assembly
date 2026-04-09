@@ -28,6 +28,11 @@ use std::collections::HashMap;
 
 pub mod tier1;
 
+#[cfg(feature = "tier1")]
+pub mod c_api {
+    pub use crate::tier1::c_api::*;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Identity types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -616,7 +621,6 @@ pub trait SafetyRail: Send + Sync {
 ///
 /// Implementations should call these from their test suites to verify they
 /// correctly implement the trait contract.
-#[cfg(test)]
 pub mod contract_tests {
     use super::*;
 

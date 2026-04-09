@@ -1,6 +1,5 @@
 use crate::{PolicyConstraint, PolicyFingerprint};
 use sha2::{Digest, Sha256};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Compute a deterministic fingerprint for a set of policy constraints.
 /// 
@@ -41,15 +40,10 @@ pub(crate) fn compute_fingerprint(constraints: &[PolicyConstraint]) -> PolicyFin
     let mut hash_bytes = [0u8; 32];
     hash_bytes.copy_from_slice(&digest);
 
-    let now_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as u64;
-
     PolicyFingerprint {
         digest: hash_bytes,
         constraint_count: constraints.len() as u32,
-        computed_at_ms: now_ms,
+        computed_at_ms: 0, // Deterministic for Tier 1
     }
 }
 

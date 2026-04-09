@@ -1,5 +1,25 @@
 # Sati-Central — Operational Status
 
+## 2026-04-09 00:04:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 2 — Re-submission Review
+**Status:** CONDITIONAL — 3 of 6 prior items resolved; 3 items remain
+**Active Agent:** None (awaiting AntiGravity remediation)
+**What was completed:**
+- Reviewed Phase 2 re-submission (z3_policy.rs + mod.rs)
+- CRITICAL-1 (empty proof cert): RESOLVED ✓
+- CRITICAL-2 (no payload hash check): RESOLVED ✓
+- SIGNIFICANT-5 (silent constraint drop): RESOLVED ✓
+- CRITICAL-4 (unsafe impl Send/Sync): STILL OPEN — must delete both unsafe impl lines; use fresh Context per verify() call
+- CRITICAL-3 (circular protection tests): STILL OPEN — needs register_constraint integration tests through public interface
+- SIGNIFICANT-6 (OTel no-op provider): STILL OPEN — OTLP exporter must be initialized in new()
+**Blockers for AntiGravity:**
+- unsafe impl Send/Sync must be removed (z3_policy.rs lines 63-64)
+- register_constraint tests must pass (MissingJustification + Duplicate paths)
+- OTel provider must be initialized; metrics must appear in otel-snapshots/latest.json
+**Next action for AntiGravity:** Read analyst-verdicts/2026-04-09-000400-phase2-resubmission-review.md. Fix three remaining items. Run cargo test --features tier1 and smoke test. Submit new briefing to analyst-inbox/.
+
+---
+
 ## 2026-04-09 00:02:00 UTC — Analyst Droid (Claude Code)
 **Phase:** 2/3/4 — Comprehensive Review Complete
 **Status:** VERDICTS ISSUED — AntiGravity must address before proceeding

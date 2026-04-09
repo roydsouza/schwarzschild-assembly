@@ -1,8 +1,8 @@
-use crate::{ExecutionErrorKind, ExecutionResult, VerifiedArtifact, ViolationReport};
-use std::collections::HashMap;
+use crate::{ExecutionErrorKind, ExecutionResult, VerifiedArtifact};
 use std::time::{Duration, Instant};
-use wasmtime::{Config, Engine, Linker, Module, Store, ResourceLimiter};
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView, Table};
+use wasmtime::{Config, Engine, Store, ResourceLimiter};
+use wasmtime::component::{Component, Linker};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView, ResourceTable};
 
 /// Implementation of the WASM sandbox using Wasmtime.
 pub(crate) struct WasmSandbox {
@@ -22,7 +22,6 @@ impl WasmSandbox {
 
     pub fn execute(&self, artifact: &VerifiedArtifact) -> ExecutionResult {
         let start_time = Instant::now();
-        let artifact_id = artifact.proposal.id;
 
         // Configuration
         let memory_limit = 256 * 1024 * 1024; // 256 MiB
@@ -36,19 +35,17 @@ impl WasmSandbox {
         // Dual-Path Preopen Strategy
         // Root is read-only
         if let Ok(root_path) = std::env::current_dir() {
-             if let Ok(dir) = wasmtime_wasi::Dir::open_ambient_dir(&root_path, wasmtime_wasi::CapFlags::READ) {
-                 // WASI p2 preopen logic (simplified for Tier 1)
-                 // wasi_builder.preopened_dir(dir, ".").expect("Preopen root");
-             }
+            let path_str = root_path.to_string_lossy().to_string();
+            let _ = wasi_builder.preopened_dir(&path_str, ".", wasmtime_wasi::DirPerms::READ, wasmtime_wasi::FilePerms::READ);
         }
 
         // Target path is writable if provided
         if let Some(target) = &artifact.proposal.target_path {
-            // wasi_builder.preopened_dir(..., target).expect("Preopen target");
+             let _ = wasi_builder.preopened_dir(target, target, wasmtime_wasi::DirPerms::all(), wasmtime_wasi::FilePerms::all());
         }
 
         let wasi = wasi_builder.build();
-        let table = Table::new();
+        let table = ResourceTable::new();
 
         let mut store = Store::new(
             &self.engine,
@@ -63,7 +60,7 @@ impl WasmSandbox {
 
         // 2. Set limits
         store.set_fuel(fuel_limit).unwrap();
-        store.out_of_fuel_trap();
+        store.set_epoch_deadline(1); // Trap on the first epoch increment
         
         // Start timeout monitor (epoch interruption)
         let engine_clone = self.engine.clone();
@@ -73,24 +70,24 @@ impl WasmSandbox {
         });
 
         // 3. Compile and Link
-        // For Tier 1, we assume the proposal payload contains raw WASM bytes if operation is ExecuteCode
+        // For Tier 1, we assume the proposal payload contains raw component bytes if operation is ExecuteCode
         let wasm_bytes = &artifact.proposal.payload;
-        let module = match Module::new(&self.engine, wasm_bytes) {
-            Ok(m) => m,
+        let component = match Component::new(&self.engine, wasm_bytes) {
+            Ok(c) => c,
             Err(e) => return ExecutionResult::Failure {
                 artifact_id: artifact.proposal.id,
                 error_kind: ExecutionErrorKind::CompilationError,
-                message: format!("WASM compilation failed: {}", e),
+                message: format!("WASM component compilation failed: {}", e),
                 exit_code: None,
                 elapsed_ms: start_time.elapsed().as_millis() as u64,
             },
         };
 
         let mut linker = Linker::new(&self.engine);
-        wasmtime_wasi::add_to_linker_sync(&mut linker, |s| s).expect("Add WASI to linker");
+        wasmtime_wasi::add_to_linker_sync(&mut linker).expect("Add WASI to linker");
 
         // 4. Instantiate and Run
-        let instance = match linker.instantiate(&mut store, &module) {
+        let instance = match linker.instantiate(&mut store, &component) {
             Ok(inst) => inst,
             Err(e) => return ExecutionResult::Failure {
                 artifact_id: artifact.proposal.id,
@@ -101,29 +98,33 @@ impl WasmSandbox {
             },
         };
 
-        let func = match instance.get_typed_func::<(), ()>(&mut store, "main") {
-            Ok(f) => f,
-            Err(e) => return ExecutionResult::Failure {
+        // For components, we often use exports from the root
+        // Here we assume a simple 'run' function or similar convention for Tier 1
+        let func = match instance.get_func(&mut store, "main") {
+            Some(f) => f,
+            None => return ExecutionResult::Failure {
                 artifact_id: artifact.proposal.id,
                 error_kind: ExecutionErrorKind::InstantiationError, 
-                message: format!("WASM main function missing: {}", e),
+                message: "WASM component 'main' function missing".to_string(),
                 exit_code: None,
                 elapsed_ms: start_time.elapsed().as_millis() as u64,
             },
         };
 
-        match func.call(&mut store, ()) {
+        match func.call(&mut store, &[], &mut []) {
             Ok(_) => ExecutionResult::Success {
                 artifact_id: artifact.proposal.id,
-                output: Vec::new(), // In Tier 1, we don't capture stdout bytes yet
+                output: Vec::new(), 
                 exit_code: 0,
                 elapsed_ms: start_time.elapsed().as_millis() as u64,
-                peak_memory_bytes: 0, // Placeholder
+                peak_memory_bytes: 0, 
             },
             Err(e) => {
-                let error_kind = if e.to_string().contains("epoch") {
+                let err_msg = format!("{:#}", e).to_lowercase();
+                // Check for interruption/timeout/fuel
+                let error_kind = if err_msg.contains("epoch") || err_msg.contains("interrupt") || err_msg.contains("timeout") || err_msg.contains("fuel") {
                     ExecutionErrorKind::Timeout
-                } else if e.to_string().contains("memory") {
+                } else if err_msg.contains("memory") || err_msg.contains("resource limit") || err_msg.contains("exhausted") {
                     ExecutionErrorKind::MemoryExhausted
                 } else {
                     ExecutionErrorKind::RuntimeTrap
@@ -147,27 +148,21 @@ struct SandboxLimits {
 
 struct SandboxState {
     wasi: WasiCtx,
-    table: Table,
+    table: ResourceTable,
     limits: SandboxLimits,
 }
 
 impl WasiView for SandboxState {
-    fn table(&self) -> &Table {
-        &self.table
-    }
-    fn table_mut(&mut self) -> &mut Table {
+    fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
-    fn ctx(&self) -> &WasiCtx {
-        &self.wasi
-    }
-    fn ctx_mut(&mut self) -> &mut WasiCtx {
+    fn ctx(&mut self) -> &mut WasiCtx {
         &mut self.wasi
     }
 }
 
 impl ResourceLimiter for SandboxState {
-    fn memory_growing(&mut self, current: usize, desired: usize, _maximum: Option<usize>) -> Result<bool, wasmtime::Error> {
+    fn memory_growing(&mut self, _current: usize, desired: usize, _maximum: Option<usize>) -> Result<bool, wasmtime::Error> {
         if desired > self.limits.memory {
             return Ok(false);
         }

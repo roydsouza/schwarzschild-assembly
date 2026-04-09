@@ -9,6 +9,7 @@ rust-version = "1.75"
 [lib]
 name = "safety_rail"
 path = "src/lib.rs"
+crate-type = ["staticlib", "rlib"]
 
 [features]
 default = ["tier1"]
@@ -19,6 +20,9 @@ tier1 = ["dep:z3", "dep:wasmtime", "dep:wasmtime-wasi"]
 tier2 = ["tier1"]
 
 [dependencies]
+# FFI-compatible types
+libc = "0.2"
+
 # Z3 SMT solver — Tier 1 formal verification
 # Pinned: z3 0.12.x tracks z3 4.12.x upstream; breaking API changes at 0.13
 z3 = { version = "0.12", optional = true }
@@ -44,12 +48,15 @@ serde_json = "1"
 # Pinned to 0.21/0.14 for stability with opentelemetry-proto
 opentelemetry = { version = "0.21", features = ["metrics"] }
 opentelemetry-otlp = { version = "0.14", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.21", features = ["metrics", "rt-tokio"] }
 
 [dev-dependencies]
 # For property-based testing of trait contract compliance
 proptest = "1"
 # For compiling human-readable .wat test assets to .wasm
 wat = "1.0"
+# For async test support in OTel pipeline
+tokio = { version = "1", features = ["full"] }
 
 [profile.release]
 # M5-optimized: native CPU features including AMX, NEON, SVE
