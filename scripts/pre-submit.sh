@@ -148,10 +148,12 @@ if [ -d agents/prolog-substrate ]; then
   echo ""
   echo "── PROLOG SAFETY ──"
 
-  # No bare assertz/retract in production code (only safe_assert/safe_retract allowed)
+  # No bare assertz/retract in production code (only safe_assert/safe_retract allowed).
+  # Exception: core/safety_bridge.pl is the ONE authorized mutation point — it calls
+  # assertz/retract directly by design (it IS the safe_assert implementation).
   violations=$(grep -rn 'assertz(\|retract(' agents/prolog-substrate/ \
     --include='*.pl' \
-    | grep -v 'safe_assert\|safe_retract\|%\|test_\|_test\.pl' \
+    | grep -v 'safe_assert\|safe_retract\|%\|test_\|_test\.pl\|core/safety_bridge\.pl' \
     | wc -l | tr -d ' ')
   if [ "$violations" -eq 0 ]; then
     ok "No bare assertz/retract in production Prolog code"
@@ -176,7 +178,7 @@ done
 
 # No committed binaries (files with no extension or known binary extensions)
 untracked_binaries=$(git ls-files --others --exclude-standard | \
-  grep -vE '\.(go|rs|pl|py|ts|tsx|js|json|sql|yaml|yml|toml|md|sh|proto|css|lock|sum|mod|txt|html|d\.ts)$' | \
+  grep -vE '\.(go|rs|pl|py|ts|tsx|js|json|sql|yaml|yml|toml|md|sh|proto|css|lock|sum|mod|txt|html|d\.ts|chr)$' | \
   grep -v '\.git' || true)
 if [ -z "$untracked_binaries" ]; then
   ok "No untracked binaries"
