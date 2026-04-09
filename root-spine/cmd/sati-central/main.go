@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,11 +18,14 @@ import (
 	"github.com/rds/sati-central/root-spine/internal/persistence"
 	"github.com/rds/sati-central/root-spine/internal/safety"
 	"github.com/rds/sati-central/root-spine/internal/websocket"
+	"github.com/rds/sati-central/root-spine/internal/mcp"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/rs/cors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
+	google_grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -82,16 +86,20 @@ func main() {
 	}
 	logger.Info("Merkle tree restored", zap.Int("leaves", tree.Size()), zap.String("root", tree.Root().Hex()))
 
-	analyst := orchestrator.NewVerdictManager(logger, "analyst-verdicts")
-	analyst.Start(5 * time.Second)
+	analystManager := orchestrator.NewVerdictManager(logger, "analyst-verdicts")
+	analystManager.Start(1 * time.Second)
+
+	// Phase 5.1: Initialize Go-based Synthetic Analyst Factory
+	analystFactory := orchestrator.NewSyntheticAnalystFactory(logger, "analyst-verdicts", nil) // spine will be set shortly
+	analystFactory.Start(ctx)
 
 	// 5a. Initialize Hub and Gate (Phase 3 CRITICAL-A/B)
 	hub := websocket.NewHub(logger)
-	gateHandler := gate.NewGate()
+	gateController := gate.NewGate()
 
 	// 6. Start gRPC Server
-	grpcServer := grpc.NewServer()
-	satiServer := sati_grpc.NewServer(logger, store, bridge, tree, analyst, hub, gateHandler)
+	satiServer := sati_grpc.NewServer(logger, store, bridge, tree, analystManager, hub, gateController, analystFactory)
+	grpcServer := google_grpc.NewServer()
 	pb.RegisterOrchestratorServer(grpcServer, satiServer)
 	reflection.Register(grpcServer)
 
@@ -104,10 +112,48 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
+	// 7. Start Socket.IO Server (Phase 4 wiring)
+	hub.Start()
+	defer hub.Stop()
+
+	go func() {
+		logger.Info("Socket.IO server listening on :8080")
+		if err := http.ListenAndServe(":8080", hub.Handler()); err != nil {
+			logger.Error("Socket.IO server failed", zap.Error(err))
+		}
+	}()
+
+	// 8. Start gRPC Server
 	go func() {
 		logger.Info("gRPC server listening on :50051")
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Error("gRPC server failed", zap.Error(err))
+		}
+	}()
+
+	// 9. Start gRPC-Web Proxy (Phase 4.1 remediation)
+	wrappedGrpc := grpcweb.WrapServer(grpcServer, grpcweb.WithOriginFunc(func(origin string) bool { return true }))
+	corsWrapper := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"POST", "GET", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "x-grpc-web", "x-user-agent"},
+	})
+	
+	grpcWebHandler := corsWrapper.Handler(wrappedGrpc)
+	go func() {
+		logger.Info("gRPC-Web proxy listening on :8081")
+		if err := http.ListenAndServe(":8081", grpcWebHandler); err != nil {
+			logger.Error("gRPC-Web server failed", zap.Error(err))
+		}
+	}()
+
+	// 10. Start MCP Host (Phase 5)
+	mcpHost := mcp.NewHost(logger, satiServer, store)
+	mcpTransport := mcp.NewHTTPTransport(logger, mcpHost)
+	go func() {
+		logger.Info("MCP Host (HTTP) listening on :8082")
+		if err := http.ListenAndServe(":8082", mcpTransport.Handler()); err != nil {
+			logger.Error("MCP Host server failed", zap.Error(err))
 		}
 	}()
 

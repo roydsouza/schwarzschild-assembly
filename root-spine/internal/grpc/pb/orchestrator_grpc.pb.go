@@ -37,6 +37,7 @@ const (
 	Orchestrator_GetDhammaContext_FullMethodName      = "/sati.central.v1.Orchestrator/GetDhammaContext"
 	Orchestrator_WriteAnalystBriefing_FullMethodName  = "/sati.central.v1.Orchestrator/WriteAnalystBriefing"
 	Orchestrator_ReadAnalystVerdict_FullMethodName    = "/sati.central.v1.Orchestrator/ReadAnalystVerdict"
+	Orchestrator_ReportMetrics_FullMethodName         = "/sati.central.v1.Orchestrator/ReportMetrics"
 )
 
 // OrchestratorClient is the client API for Orchestrator service.
@@ -80,6 +81,9 @@ type OrchestratorClient interface {
 	// ReadAnalystVerdict reads the latest verdict for a given topic or proposal.
 	// Called by AntiGravity to check if a verdict has been issued.
 	ReadAnalystVerdict(ctx context.Context, in *VerdictQuery, opts ...grpc.CallOption) (*AnalystVerdict, error)
+	// ReportMetrics submits domain-specific metric values to the global fitness vector.
+	// Called periodically by factories after their internal collection loops.
+	ReportMetrics(ctx context.Context, in *MetricReport, opts ...grpc.CallOption) (*OperationStatus, error)
 }
 
 type orchestratorClient struct {
@@ -209,6 +213,16 @@ func (c *orchestratorClient) ReadAnalystVerdict(ctx context.Context, in *Verdict
 	return out, nil
 }
 
+func (c *orchestratorClient) ReportMetrics(ctx context.Context, in *MetricReport, opts ...grpc.CallOption) (*OperationStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OperationStatus)
+	err := c.cc.Invoke(ctx, Orchestrator_ReportMetrics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrchestratorServer is the server API for Orchestrator service.
 // All implementations must embed UnimplementedOrchestratorServer
 // for forward compatibility.
@@ -250,6 +264,9 @@ type OrchestratorServer interface {
 	// ReadAnalystVerdict reads the latest verdict for a given topic or proposal.
 	// Called by AntiGravity to check if a verdict has been issued.
 	ReadAnalystVerdict(context.Context, *VerdictQuery) (*AnalystVerdict, error)
+	// ReportMetrics submits domain-specific metric values to the global fitness vector.
+	// Called periodically by factories after their internal collection loops.
+	ReportMetrics(context.Context, *MetricReport) (*OperationStatus, error)
 	mustEmbedUnimplementedOrchestratorServer()
 }
 
@@ -292,6 +309,9 @@ func (UnimplementedOrchestratorServer) WriteAnalystBriefing(context.Context, *Br
 }
 func (UnimplementedOrchestratorServer) ReadAnalystVerdict(context.Context, *VerdictQuery) (*AnalystVerdict, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReadAnalystVerdict not implemented")
+}
+func (UnimplementedOrchestratorServer) ReportMetrics(context.Context, *MetricReport) (*OperationStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReportMetrics not implemented")
 }
 func (UnimplementedOrchestratorServer) mustEmbedUnimplementedOrchestratorServer() {}
 func (UnimplementedOrchestratorServer) testEmbeddedByValue()                      {}
@@ -505,6 +525,24 @@ func _Orchestrator_ReadAnalystVerdict_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orchestrator_ReportMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricReport)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrchestratorServer).ReportMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orchestrator_ReportMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrchestratorServer).ReportMetrics(ctx, req.(*MetricReport))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Orchestrator_ServiceDesc is the grpc.ServiceDesc for Orchestrator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -551,6 +589,10 @@ var Orchestrator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadAnalystVerdict",
 			Handler:    _Orchestrator_ReadAnalystVerdict_Handler,
+		},
+		{
+			MethodName: "ReportMetrics",
+			Handler:    _Orchestrator_ReportMetrics_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

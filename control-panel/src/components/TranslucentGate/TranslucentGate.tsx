@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ProposalResolution } from '@/types';
 import AnalystVerdict from '../AnalystVerdict/AnalystVerdict';
+import DhammaReflection from '../DhammaReflection/DhammaReflection';
 import styles from './TranslucentGate.module.css';
 import { Shield, AlertTriangle, CheckCircle, Activity, BookOpen, Fingerprint } from 'lucide-react';
 
@@ -80,12 +81,7 @@ export default function TranslucentGate({ data, onApprove, onDeny }: Props) {
             <BookOpen size={14} className={styles.icon} /> DHAMMA_WEIGHTING
           </div>
           {reflection ? (
-            <div className={styles.reflection}>
-              <div className={styles.score}>
-                ALIGNMENT: {(reflection.score * 100).toFixed(1)}%
-              </div>
-              <p className={styles.reasoning}>{reflection.reasoning}</p>
-            </div>
+            <DhammaReflection reflection={reflection} />
           ) : (
             <div className={styles.placeholder}>PENDING_CONTEXT</div>
           )}

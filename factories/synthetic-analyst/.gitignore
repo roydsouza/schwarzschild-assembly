@@ -1,0 +1,6 @@
+analyst-worker
+*.a
+*.o
+*.so
+*.dylib
+*.test

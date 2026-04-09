@@ -141,6 +141,61 @@ func (s *Store) GetMerkleLeaves(ctx context.Context) ([]string, error) {
 	}
 	return leaves, nil
 }
+
+// IsProposalSecurityAdjacent checks whether a proposal is security-adjacent.
+// Used by the MCP host to block approve_action on security-adjacent proposals.
+func (s *Store) IsProposalSecurityAdjacent(ctx context.Context, proposalID uuid.UUID) (bool, error) {
+	var isSec bool
+	err := s.pool.QueryRow(ctx, "SELECT is_security_adjacent FROM proposals WHERE id = $1", proposalID).Scan(&isSec)
+	if err != nil {
+		return false, fmt.Errorf("failed to check proposal security status: %w", err)
+	}
+	return isSec, nil
+}
+
+// SaveMetricDeclaration persists a factory's domain metric definition.
+func (s *Store) SaveMetricDeclaration(ctx context.Context, factoryID uuid.UUID, metricID, displayName, desc, unit, direction string, threshold float64, operator string) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO metric_declarations (metric_id, factory_id, display_name, description, unit, direction, escalation_threshold, escalation_operator)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (metric_id) DO UPDATE SET 
+			display_name = EXCLUDED.display_name,
+			description = EXCLUDED.description,
+			unit = EXCLUDED.unit,
+			direction = EXCLUDED.direction,
+			escalation_threshold = EXCLUDED.escalation_threshold,
+			escalation_operator = EXCLUDED.escalation_operator`,
+		metricID, factoryID, displayName, desc, unit, direction, threshold, operator)
+	if err != nil {
+		return fmt.Errorf("failed to save metric declaration: %w", err)
+	}
+	return nil
+}
+
+// SaveMetricValue records a measured metric value.
+func (s *Store) SaveMetricValue(ctx context.Context, metricID string, value float64, status string, observedAt time.Time) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO metric_values (metric_id, value, status, observed_at)
+		VALUES ($1, $2, $3, $4)`,
+		metricID, value, status, observedAt)
+	if err != nil {
+		return fmt.Errorf("failed to save metric value: %w", err)
+	}
+	return nil
+}
+
+// SaveFitnessSnapshot persists a full cross-section of the global fitness vector.
+func (s *Store) SaveFitnessSnapshot(ctx context.Context, schemaVersion string, tsMs int64, metricsJSON, extensionsJSON []byte) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO fitness_vector_snapshots (schema_version, timestamp_ms, metrics_json, domain_extensions_json)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (timestamp_ms) DO NOTHING`,
+		schemaVersion, tsMs, metricsJSON, extensionsJSON)
+	if err != nil {
+		return fmt.Errorf("failed to save fitness snapshot: %w", err)
+	}
+	return nil
+}
 // ApplyMigrations runs any pending SQL migrations in the specified directory.
 func (s *Store) ApplyMigrations(ctx context.Context, migrationsDir string) error {
 	// 1. Create migrations tracking table

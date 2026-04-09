@@ -1,99 +1,182 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ProposalResolution } from '@/types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { OrchestratorClient } from '@/types/OrchestratorServiceClientPb';
+import { ApprovalRequest, VetoRequest, Empty } from '@/types/orchestrator_pb';
+import { 
+  ProposalResolution, 
+  ActionProposal, 
+  SafetyVerdict, 
+  ResolutionState,
+  MerkleNote 
+} from '@/types';
 
-const MOCK_PROPOSALS: ProposalResolution[] = [
-  {
-    proposal: {
-      id: '550e8400-e29b-41d4-a716-446655440000',
-      agentId: 'synthetic-analyst-alpha',
-      description: 'Rebalance DeFi liquidity in pools A and B due to abnormal skew in TVL depth.',
-      payloadHash: 'f4ab83c1...92d1',
-      targetPath: 'vault/liquidity-manager',
-      isSecurityAdjacent: true,
-      submittedAtMs: Date.now() - 5000,
-    },
-    verdict: {
-      isSafe: true,
-      tier: 'SAFETY_TIER_1',
-      durationMs: 42,
-      policyFingerprint: 'z3-v1-0xA',
-    },
-    reflection: {
-      score: 0.94,
-      root: 'kusala',
-      citations: ['dn1:1.1.1'],
-      reasoning: 'Promotes non-greedy allocation and systemic stability.',
-    },
-    analystVerdict: {
-      status: 'APPROVED',
-      date: new Date().toISOString(),
-      rationale: '### ARCHITECTURAL_REVIEW\n\nProposed liquidity rebalancing follows the standard entropy-reduction pattern for DeFi vault management. No recursive logic detected.\n\n- [x] Schema compliance\n- [x] Deterministic execution path',
-    },
-    resolution: 'SAFE',
-  },
-  {
-    proposal: {
-      id: '66c9dbfb-f59b-4867-8b5e-7a0e698c4d21',
-      agentId: 'macro-forecaster',
-      description: 'Update interest rate model params to offset projected volatility in yield curve.',
-      payloadHash: 'a1b2c3d4...e5f6',
-      targetPath: 'core/rates-v2',
-      isSecurityAdjacent: true,
-      submittedAtMs: Date.now() - 2000,
-    },
-    analystVerdict: {
-      status: 'VETOED',
-      date: new Date().toISOString(),
-      rationale: '### SAFETY_VETO\n\nProposed interest rate adjustments exceed the **volatility_dampener** threshold. Implementation of these parameters would create a feedback loop in the yield curve projection, potentially leading to a black-swan liquidation event.\n\n**CRITICAL_DEFECT:** feedback-loop-detected',
-    },
-    resolution: 'CHECKING',
-  }
-];
+// Root Spine targets
+const SOCKET_URL = 'http://localhost:8080';
+const GRPC_WEB_URL = 'http://localhost:8081';
 
-export function useOrchestrator(useMock = true) {
+export function useOrchestrator(useMock = false) {
   const [proposals, setProposals] = useState<ProposalResolution[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Persistence refs for networking
+  const socketRef = useRef<Socket | null>(null);
+  const grpcRef = useRef<OrchestratorClient | null>(null);
 
   useEffect(() => {
     if (useMock) {
-      setProposals(MOCK_PROPOSALS);
       setIsConnected(true);
       return;
     }
 
-    // Real WebSocket implementation would go here
-    const socket = new WebSocket('ws://localhost:50051/ws');
-    
-    socket.onopen = () => setIsConnected(true);
-    socket.onclose = () => setIsConnected(false);
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // Handle incoming proposal events
-    };
+    // 1. Initialize gRPC-Web client
+    grpcRef.current = new OrchestratorClient(GRPC_WEB_URL);
 
-    return () => socket.close();
+    // 2. Initialize Socket.IO connection
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      setError(null);
+      console.log('[CONTROL_PANEL] Connected to Root Spine');
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+      console.log('[CONTROL_PANEL] Disconnected from Root Spine');
+    });
+
+    socket.on('connect_error', (err: Error) => {
+      setError(`Connection failed: ${err.message}`);
+      setIsConnected(false);
+    });
+
+    // 3. Handle live verification events
+    socket.on('verification_event', (raw: string) => {
+      try {
+        const event = JSON.parse(raw);
+        handleIncomingEvent(event);
+      } catch (e) {
+        console.error('Failed to parse verification event', e);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [useMock]);
 
+  /**
+   * handleIncomingEvent updates the proposal queue based on real-time signals.
+   */
+  const handleIncomingEvent = (event: any) => {
+    setProposals(prev => {
+      const existing = prev.find(p => p.proposal.id === event.proposal_id);
+      
+      // Map PB event types to UI resolution states
+      let newState: ResolutionState = 'RECEIVED';
+      if (event.event_type === 1) newState = 'SAFE'; // VERIFICATION_SAFE
+      if (event.event_type === 2) newState = 'UNSAFE'; // VERIFICATION_UNSAFE
+      if (event.event_type === 3) newState = 'CHECKING'; // GATE_PENDING
+      if (event.event_type === 4) newState = 'COMMITTED'; // GATE_APPROVED
+      if (event.event_type === 5) newState = 'VETOED'; // GATE_DENIED
+
+      if (!existing) {
+        // This is a new proposal we haven't seen yet
+        const newProposal: ProposalResolution = {
+          proposal: {
+            id: event.proposal_id,
+            agentId: 'unknown', // Would be enriched by a separate fetch if needed
+            description: 'Live proposal from Root Spine...',
+            payloadHash: '',
+            isSecurityAdjacent: event.event_type === 3,
+            submittedAtMs: event.timestamp_ms || Date.now(),
+          },
+          resolution: newState,
+        };
+        return [newProposal, ...prev];
+      }
+
+      // Update existing proposal
+      return prev.map(p => {
+        if (p.proposal.id === event.proposal_id) {
+          return {
+            ...p,
+            resolution: newState,
+            // If it's a safe result, attach the proof
+            verdict: event.safe_result ? {
+              isSafe: true,
+              tier: 'SAFETY_TIER_1',
+              durationMs: event.safe_result.duration_ms,
+              policyFingerprint: '',
+              proofBytes: event.safe_result.proof_certificate_hex,
+            } : p.verdict
+          };
+        }
+        return p;
+      });
+    });
+  };
+
+  /**
+   * approveProposal sends the human approval signature to the Translucent Gate.
+   */
   const approveProposal = useCallback(async (id: string, signature: string) => {
-    console.log(`[ORCHESTRATOR] Approving proposal ${id} with signature ${signature}`);
-    // Update local state
-    setProposals(prev => prev.map(p => 
-      p.proposal.id === id ? { ...p, resolution: 'COMMITTED' as const } : p
-    ));
+    if (!grpcRef.current) return;
+
+    console.log(`[ORCHESTRATOR] Signing approval for ${id}`);
+    
+    const req = new ApprovalRequest();
+    req.setProposalId(id);
+    req.setApprovalSignature(signature);
+
+    try {
+      const proof = await grpcRef.current.approveAction(req, {});
+      console.log(`[ORCHESTRATOR] Proposal ${id} committed to Merkle log`, proof.toObject());
+      
+      setProposals(prev => prev.map(p => 
+        p.proposal.id === id ? { ...p, resolution: 'COMMITTED' as const } : p
+      ));
+    } catch (err: any) {
+      console.error('ApproveAction failed', err);
+      setError(`Approval failed: ${err.message}`);
+    }
   }, []);
 
+  /**
+   * denyProposal sends a manual veto to the Root Spine.
+   */
   const denyProposal = useCallback(async (id: string) => {
+    if (!grpcRef.current) return;
+
     console.log(`[ORCHESTRATOR] Vetoing proposal ${id}`);
-    setProposals(prev => prev.map(p => 
-      p.proposal.id === id ? { ...p, resolution: 'VETOED' as const } : p
-    ));
+    
+    const req = new VetoRequest();
+    req.setProposalId(id);
+    req.setVetoedBy('OPERATOR');
+    req.setRationale('Manual veto from Control Panel');
+
+    try {
+      await grpcRef.current.vetoAction(req, {});
+      setProposals(prev => prev.map(p => 
+        p.proposal.id === id ? { ...p, resolution: 'VETOED' as const } : p
+      ));
+    } catch (err: any) {
+      console.error('VetoAction failed', err);
+      setError(`Veto failed: ${err.message}`);
+    }
   }, []);
 
   return {
     proposals,
     isConnected,
+    error,
     approveProposal,
     denyProposal,
   };

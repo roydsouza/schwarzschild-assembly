@@ -3,7 +3,11 @@ package grpc
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,18 +31,20 @@ type Server struct {
 	safety  *safety.Bridge
 	merkle  *merkle.Tree
 	analyst *orchestrator.VerdictManager
+	factory *orchestrator.SyntheticAnalystFactory
 	hub     *websocket.Hub
 	gate    *gate.Gate
 }
 
 // NewServer creates a new gRPC orchestrator server.
-func NewServer(logger *zap.Logger, store *persistence.Store, safety *safety.Bridge, tree *merkle.Tree, analyst *orchestrator.VerdictManager, hub *websocket.Hub, gate *gate.Gate) *Server {
+func NewServer(logger *zap.Logger, store *persistence.Store, safety *safety.Bridge, tree *merkle.Tree, analyst *orchestrator.VerdictManager, hub *websocket.Hub, gate *gate.Gate, factory *orchestrator.SyntheticAnalystFactory) *Server {
 	return &Server{
 		logger:  logger,
 		store:   store,
 		safety:  safety,
 		merkle:  tree,
 		analyst: analyst,
+		factory: factory,
 		hub:     hub,
 		gate:    gate,
 	}
@@ -96,6 +102,11 @@ func (s *Server) SubmitProposal(req *pb.ActionProposal, stream pb.Orchestrator_S
 
 	if err := s.store.SaveProposal(stream.Context(), pID, fID, req.AgentId, req.Description, req.PayloadHash, req.IsSecurityAdjacent, time.UnixMilli(req.SubmittedAtMs)); err != nil {
 		return status.Errorf(codes.Internal, "failed to persist proposal: %v", err)
+	}
+
+	// 2b. Trigger Autonomous Analysis (Phase 5.1)
+	if s.factory != nil {
+		go s.factory.AnalyzeProposal(context.Background(), req)
 	}
 
 	// 3. Verify via Safety Rail
@@ -159,7 +170,10 @@ func (s *Server) SubmitProposal(req *pb.ActionProposal, stream pb.Orchestrator_S
 			s.hub.Broadcast(event)
 			
 			// Update DB to PENDING
-			s.store.UpdateProposalVerdict(stream.Context(), pID, "PENDING_APPROVAL", merkle.LeafHash(result.Proof).Hex(), result.DurationMS, result.Proof)
+			if err := s.store.UpdateProposalVerdict(stream.Context(), pID, "PENDING_APPROVAL", merkle.LeafHash(result.Proof).Hex(), result.DurationMS, result.Proof); err != nil {
+				s.logger.Error("failed to update proposal to PENDING", zap.Error(err))
+				return status.Errorf(codes.Internal, "persistence failure: %v", err)
+			}
 			return nil
 		}
 	} else {
@@ -189,13 +203,72 @@ func (s *Server) SubmitProposal(req *pb.ActionProposal, stream pb.Orchestrator_S
 		leafHash := merkle.LeafHash(leafData)
 		s.merkle.Append(leafHash)
 		
-		s.store.SaveMerkleLeaf(stream.Context(), int64(s.merkle.Size()-1), pID, leafHash.Hex(), "VERIFICATION_SAFE", fingerprint, s.merkle.Root().Hex())
-		s.store.UpdateProposalVerdict(stream.Context(), pID, verdictStr, fingerprint, result.DurationMS, result.Proof)
+		if err := s.store.SaveMerkleLeaf(stream.Context(), int64(s.merkle.Size()-1), pID, leafHash.Hex(), "VERIFICATION_SAFE", fingerprint, s.merkle.Root().Hex()); err != nil {
+			s.logger.Error("failed to save merkle leaf", zap.Error(err))
+			return status.Errorf(codes.Internal, "audit log persistence failure: %v", err)
+		}
+		if err := s.store.UpdateProposalVerdict(stream.Context(), pID, verdictStr, fingerprint, result.DurationMS, result.Proof); err != nil {
+			s.logger.Error("failed to update proposal verdict", zap.Error(err))
+			return status.Errorf(codes.Internal, "verdict persistence failure: %v", err)
+		}
 	} else {
-		s.store.UpdateProposalVerdict(stream.Context(), pID, verdictStr, "", result.DurationMS, nil)
+		// [PHASE-5] Audit UNSAFE verdicts
+		leafData := []byte(fmt.Sprintf("%s:UNSAFE:%s", req.Id, result.Error))
+		leafHash := merkle.LeafHash(leafData)
+		s.merkle.Append(leafHash)
+		
+		if err := s.store.SaveMerkleLeaf(stream.Context(), int64(s.merkle.Size()-1), pID, leafHash.Hex(), "VERIFICATION_UNSAFE", "", s.merkle.Root().Hex()); err != nil {
+			s.logger.Error("failed to save unsafe merkle leaf", zap.Error(err))
+		}
+
+		if err := s.store.UpdateProposalVerdict(stream.Context(), pID, verdictStr, "", result.DurationMS, nil); err != nil {
+			s.logger.Error("failed to update UNSAFE verdict", zap.Error(err))
+			return status.Errorf(codes.Internal, "verdict persistence failure: %v", err)
+		}
 	}
 
 	return nil
+}
+
+// WriteAnalystBriefing writes a briefing packet to analyst-inbox/.
+func (s *Server) WriteAnalystBriefing(ctx context.Context, req *pb.Briefing) (*pb.OperationStatus, error) {
+	filename := fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02-150405"), req.Topic)
+	path := filepath.Join("analyst-inbox", filename)
+
+	content := fmt.Sprintf(`# Analyst Briefing: %s
+**Date:** %s
+**Author:** %s
+**Phase:** %s
+**Briefing ID:** %s
+
+## Summary
+%s
+
+## Artifacts
+%s
+
+## Analyst Questions
+%s
+
+---
+*Submitted via Sati-Central Root Spine (%s)*
+`, req.Topic, time.Now().Format("2006-01-02 15:04:05 UTC"), req.Author, req.Phase, req.BriefingId, 
+   req.SummaryMarkdown, "- " + strings.Join(req.Artifacts, "\n- "), "- " + strings.Join(req.Questions, "\n- "), req.BriefingId)
+
+	if err := os.MkdirAll("analyst-inbox", 0755); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create inbox: %v", err)
+	}
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to write briefing: %v", err)
+	}
+
+	s.logger.Info("analyst briefing published", zap.String("topic", req.Topic), zap.String("file", filename))
+
+	return &pb.OperationStatus{
+		Success: true,
+		Message: fmt.Sprintf("Briefing %s published to analyst-inbox/", req.Topic),
+	}, nil
 }
 
 // ReadAnalystVerdict retrieves the latest automated analysis for an artifact.
@@ -251,7 +324,10 @@ func (s *Server) ApproveAction(ctx context.Context, req *pb.ApprovalRequest) (*p
 	leafData := []byte(fmt.Sprintf("%s:APPROVED", req.ProposalId))
 	leafHash := merkle.LeafHash(leafData)
 	s.merkle.Append(leafHash)
-	s.store.SaveMerkleLeaf(ctx, int64(s.merkle.Size()-1), pID, leafHash.Hex(), "GATE_APPROVED", "", s.merkle.Root().Hex())
+	if err := s.store.SaveMerkleLeaf(ctx, int64(s.merkle.Size()-1), pID, leafHash.Hex(), "GATE_APPROVED", "", s.merkle.Root().Hex()); err != nil {
+		s.logger.Error("failed to save approved merkle leaf", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "audit log persistence failure: %v", err)
+	}
 
 	// 3. Notify Hub
 	s.hub.Broadcast(&pb.VerificationEvent{
@@ -283,7 +359,10 @@ func (s *Server) VetoAction(ctx context.Context, req *pb.VetoRequest) (*pb.Opera
 	leafData := []byte(fmt.Sprintf("%s:VETOED", req.ProposalId))
 	leafHash := merkle.LeafHash(leafData)
 	s.merkle.Append(leafHash)
-	s.store.SaveMerkleLeaf(ctx, int64(s.merkle.Size()-1), pID, leafHash.Hex(), "GATE_DENIED", "", s.merkle.Root().Hex())
+	if err := s.store.SaveMerkleLeaf(ctx, int64(s.merkle.Size()-1), pID, leafHash.Hex(), "GATE_DENIED", "", s.merkle.Root().Hex()); err != nil {
+		s.logger.Error("failed to save veto merkle leaf", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "audit log persistence failure: %v", err)
+	}
 
 	// Notify Hub
 	s.hub.Broadcast(&pb.VerificationEvent{
@@ -295,5 +374,66 @@ func (s *Server) VetoAction(ctx context.Context, req *pb.VetoRequest) (*pb.Opera
 	return &pb.OperationStatus{
 		Success: true,
 		Message: "Proposal vetoed at Translucent Gate",
+	}, nil
+}
+
+// RegisterDomainMetrics persists domain-specific metric schemas.
+func (s *Server) RegisterDomainMetrics(ctx context.Context, req *pb.DomainFitnessExtension) (*pb.RegistrationResult, error) {
+	fID, err := uuid.Parse(req.FactoryId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid factory ID: %v", err)
+	}
+
+	count := 0
+	for _, m := range req.Metrics {
+		// Fully qualified metric ID: factory_type.metric_id
+		fqID := fmt.Sprintf("%s.%s", req.FactoryType, m.MetricId)
+		err := s.store.SaveMetricDeclaration(ctx, fID, fqID, m.DisplayName, m.Description, m.Unit, m.Direction.String(), m.EscalationThreshold, m.EscalationOperator.String())
+		if err != nil {
+			s.logger.Error("failed to save metric declaration", zap.String("metric_id", fqID), zap.Error(err))
+			continue
+		}
+		count++
+	}
+
+	s.logger.Info("factory metrics registered", zap.String("factory_id", req.FactoryId), zap.Int("count", count))
+
+	return &pb.RegistrationResult{
+		Success:         true,
+		FactoryId:       req.FactoryId,
+		RegisteredCount: int32(count),
+	}, nil
+}
+
+// ReportMetrics records time-series metric data and broadcasts to the UI.
+func (s *Server) ReportMetrics(ctx context.Context, req *pb.MetricReport) (*pb.OperationStatus, error) {
+	observedAt := time.UnixMilli(req.ObservedAtMs)
+	
+	for id, val := range req.Metrics {
+		// We use a simple status logic here; real logic would check the threshold
+		// In Phase 5/6 we just mark it GREEN unless we implement the evaluator
+		err := s.store.SaveMetricValue(ctx, id, val, "GREEN", observedAt)
+		if err != nil {
+			s.logger.Warn("failed to save metric value", zap.String("id", id), zap.Error(err))
+		}
+	}
+
+	// Broadcast update to Control Panel Hub
+	// We wrap the report in a generic event for now
+	metricsJSON, _ := json.Marshal(req.Metrics)
+	s.hub.Broadcast(&pb.VerificationEvent{
+		ProposalId: req.FactoryId,
+		EventType:  pb.VerificationEventType_VERIFICATION_RECEIVED, // Re-using event type for trigger
+		TimestampMs: req.ObservedAtMs,
+		Result: &pb.VerificationEvent_SafeResult{
+			SafeResult: &pb.SafeResult{
+				ProofCertificateHex: string(metricsJSON), // Using proof_cert as payload carrier for UI
+			},
+		},
+	})
+
+	return &pb.OperationStatus{
+		Success: true,
+		Message: "Metrics reported successfully",
 	}, nil
 }

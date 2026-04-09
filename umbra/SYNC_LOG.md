@@ -2,23 +2,185 @@
 schema: sati-central-handoff/v1
 last_agent: claude-code
 last_session: 2026-04-09
-phase_active: 2
-phase_status: conditional-requires-fixes
-next_phase: 2-remediation-round3
+phase_active: 6
+phase_status: not-started
+next_phase: 6-code-assurance-factory
 in_progress: []
 running_services: []
-recommended_next_action: "AntiGravity: Implement 4 missing items from Phase 3 CONDITIONAL verdict. Do not file briefing until all 4 exist on disk and go build ./... passes."
+recommended_next_action: >
+  AntiGravity: Four amendments applied (drop Dhamma-Adviser, Phase 7 Assembly Line Manager,
+  Phase 8 Prolog Self-Enhancement, process hardening + pre-submit.sh).
+  MANDATORY NEW RULE: Run scripts/pre-submit.sh before filing any briefing. Copy verbatim
+  output into briefing ## Verification Output section. Briefings without this are rejected.
+  Complete four Phase 6 pre-conditions FIRST (see blockers), then read CLAUDE.md §3 Phase 6.
 blockers:
-  - "Phase 3: internal/websocket/ does not exist — implement Hub + Broadcast, wire into SubmitProposal"
-  - "Phase 3: internal/gate/ does not exist — implement Gate + Route, wire into SubmitProposal for is_security_adjacent"
-  - "Phase 3: ApproveAction and VetoAction not implemented in server.go — implement with DB update + SaveMerkleLeaf"
-  - "Phase 3: SaveMerkleLeaf never called — call after UpdateProposalVerdict in SubmitProposal"
+  - "Pre-condition: fix metric key mismatch in synthetic-analyst/mcp-server/server.go — metrics[\"defi-coverage\"] must be metrics[\"defi_coverage\"], metrics[\"pali-filter\"] must be metrics[\"pali_filter_rate\"]"
+  - "Pre-condition: implement ReportMetrics RPC — add to root-spine/proto/orchestrator.proto + root-spine/internal/grpc/server.go; factories/synthetic-analyst/worker/main.go monitoring loop must push values via this RPC"
+  - "Pre-condition: implement MCP approve_action IsSecurityAdjacent check per proposals/pending/mcp-tool-security.md — security-adjacent actions must return error directing operator to Control Panel"
+  - "Pre-condition: update synthetic-analyst domain metrics — remove pali_filter_rate, add answer_accuracy (% correct on held-out QA benchmark), knowledge_coverage (% of indexed domain facts retrievable), query_latency (p99 ms from query to response)"
 ---
 
 # Sati-Central SYNC_LOG
 
 Joint handoff log between Roy, Claude Code (Analyst Droid), and AntiGravity (Worker Droid).
 Written at close of each session. Parse the YAML frontmatter for machine-readable state.
+
+---
+
+## 2026-04-09 — Claude Code Session 6 (Phase 5 APPROVED + Amendments + Handoff)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Full review cycle for Phase 5, plus four major amendments applied. Session closed with
+comprehensive handoff to AntiGravity.
+
+**Phase 5 verdict sequence:**
+- Round 1 CONDITIONAL: scope mislabeled as completion; REGRESSION-1 (VetoAction merkle leaf return value discarded)
+- Round 2 CONDITIONAL: anatomy incomplete (mcp-server/, analyst-briefing/ missing); metric key mismatch in mcp-server/server.go; monitoring loop never pushes ReportMetrics
+- APPROVED: all anatomy present on disk; REGRESSION-1 fixed; metric key mismatch + ReportMetrics gap elevated to Phase 6 pre-conditions
+
+**Amendments applied:**
+
+1. **Drop Dhamma-Adviser → Code Assurance Factory**: Phase 6 redefined as quality challenger droid (lint, cyclomatic complexity, CVE audit, test coverage, duplication detection). Fitness vector v2.0.0: dhamma_alignment removed; artifact_correctness (0.25) + code_quality (0.15) added. ReportMetrics RPC added to proto spec. DhammaReflection → CodeQualityPanel.
+
+2. **Phase 7 — Assembly Line Manager**: Cookie-cutter lifecycle (INTAKE→DESIGN→SCAFFOLD→BUILD→VERIFY→DELIVERED) for new software services via Scaffold Engine factory. Self-modification: Option A (UpdateSkill RPC) + Option B (SubmitProposal pipeline); Option C (live self-patching) prohibited via safety_no_direct_source_write constraint. Roy has final say on specs. Analyst Droid reviews Roy's approved spec — never its own draft. Language selection table: Go (concurrency/scale), Rust (efficiency/compactness), Python (AI/agentic/self-modifying), TypeScript (UI), Prolog/SWI-Prolog (knowledge base/logic/self-modifying skills), Haskell (formal correctness/property-based).
+
+3. **Phase 8 — Prolog Self-Enhancement Framework**: SWI-Prolog homoiconicity as native Option A substrate. safe_assert/1 as single mutation point routing through Safety Rail + CHR constraints. CHR policy layer enforces change_magnitude ≤ 0.30, no direct source writes, no recursive self-improvement without Translucent Gate. Pengines sandbox for candidate evaluation. Meta-improvement loop enables framework self-enhancement (security-adjacent → Gate required). Persistence via Merkle log.
+
+4. **Process hardening**: Anti-Slop Rule 9 (scope claim requires passing checklist). scripts/pre-submit.sh with 7 verification sections (build, cumulative tests, interface consistency, anatomy check, Prolog safety, hygiene, briefing path). SWI-Prolog and Haskell added to §9. New §10 AntiGravity Pre-Submission Protocol. scripts/bootstrap.sh updated with SWI-Prolog (brew) and GHCup installation.
+
+### Standing Orders for AntiGravity
+
+**BEFORE ANY OTHER WORK — read CLAUDE.md §10.** The pre-submission protocol is now mandatory.
+scripts/pre-submit.sh must pass before filing any briefing. Verbatim output goes in `## Verification Output`.
+
+**Phase 6 pre-conditions (complete these before Phase 6 code):**
+
+1. `factories/synthetic-analyst/mcp-server/server.go` — fix two metric key mismatches:
+   - Line ~25: `metrics["defi-coverage"]` → `metrics["defi_coverage"]`
+   - Line ~28: `metrics["pali-filter"]` → `metrics["pali_filter_rate"]`
+
+2. `root-spine/proto/orchestrator.proto` + `root-spine/internal/grpc/server.go` — implement ReportMetrics RPC:
+   ```protobuf
+   rpc ReportMetrics(MetricSnapshot) returns (OperationStatus);
+   message MetricSnapshot {
+     string factory_id = 1;
+     string metric_id = 2;
+     double value = 3;
+     int64 timestamp_ms = 4;
+   }
+   ```
+   Wire into fitness vector in-memory state. factories/synthetic-analyst/worker/main.go monitoring
+   loop must call this RPC to push live values every collection cycle.
+
+3. `root-spine/internal/mcp/` — implement IsSecurityAdjacent check per proposals/pending/mcp-tool-security.md.
+   approve_action tool must return an error directing operator to the Control Panel for
+   security-adjacent proposals (any proposal touching safety-rail/, merkle-log/, proto/, CLAUDE.md).
+
+4. `factories/synthetic-analyst/domain-fitness/metrics.go` — replace pali_filter_rate metric:
+   Remove: pali_filter_rate
+   Add: answer_accuracy (% correct on held-out QA benchmark, threshold 0.85), knowledge_coverage
+   (% of indexed domain facts retrievable within p99 latency, threshold 0.80), query_latency
+   (p99 ms from query to first response token, threshold 500ms, lower=better)
+   Update RegisterDomainMetrics call in worker/main.go.
+
+**After all four pre-conditions are done — run pre-submit.sh, then begin Phase 6.**
+
+Read CLAUDE.md §3 Phase 6 for the Code Assurance Factory spec. Factory anatomy required:
+```
+factories/code-assurance/
+├── mcp-server/
+├── worker/
+├── domain-fitness/
+├── analyst-briefing/
+└── README.md
+```
+
+Domain fitness metrics for Code Assurance: artifact_correctness (% files passing lint+cyclomatic
+threshold), code_quality (composite: coverage %, duplication %, CVE count). These feed the global
+fitness vector via ReportMetrics RPC.
+
+**Phase 7 and Phase 8 specs** are in CLAUDE.md §3 — read them for context but do not begin
+implementation until Phase 6 is APPROVED.
+
+### Handoff to AntiGravity
+
+Begin: (1) Fix four pre-conditions above. (2) Run scripts/pre-submit.sh — must exit 0. (3) File briefing to analyst-inbox/YYYY-MM-DD-HHMMSS-phase6-preconditions.md with Verification Output section. (4) Begin Phase 6 Code Assurance Factory per CLAUDE.md §3.
+
+---
+
+## 2026-04-09 — Claude Code Session 5 (Phase 4 Review + Phase 4.1 Approval)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 4 initial review: CONDITIONAL (two critical items). Phase 4.1 remediation: APPROVED.
+
+**Phase 4 CONDITIONAL issues (now resolved):**
+- CRITICAL-1: `denyProposal` used `new ApprovalRequest()` for `vetoAction()` — wrong proto binary. Fixed: `new VetoRequest()` with `setVetoedBy('OPERATOR')` and `setRationale(...)`. ✓
+- CRITICAL-2: gRPC server on `:50051` not browser-reachable. Fixed: `grpcweb.WrapServer` on `:8081` with CORS; `GRPC_WEB_URL = 'http://localhost:8081'`; both deps in `go.mod`. ✓
+
+**Full Phase 4 deliverables confirmed:**
+- Socket.IO end-to-end (`:8080`) ✓
+- gRPC-Web RPC (`:8081`) ✓
+- `DhammaReflection` with Bilara deep links ✓
+- TranslucentGate 4/4 safety invariant tests ✓
+- Persistence error propagation ✓
+
+### Handoff to AntiGravity — Phase 5
+
+Read `analyst-verdicts/2026-04-09-041500-phase4-approved.md` for full pre-conditions.
+
+Three items required before beginning factory code:
+1. Implement `internal/mcp/` — stdio and Streamable HTTP transports. No factory can register without an operational MCP host.
+2. Add Merkle leaf write in the UNSAFE verdict path of `SubmitProposal`. UNSAFE events are safety events and must be auditable.
+3. `go mod tidy` to promote direct deps from `// indirect`.
+
+Factory anatomy (mandatory):
+```
+factories/synthetic-analyst/
+├── mcp-server/
+├── worker/
+├── domain-fitness/
+├── analyst-briefing/
+└── README.md
+```
+
+Domain fitness extension must register 5 metrics via `RegisterDomainMetrics` RPC on factory startup (see CLAUDE.md §5).
+
+---
+
+## 2026-04-09 — Claude Code Session 5 (Phase 4 Review)
+
+**Agent:** Claude Code (Analyst Droid)
+**Duration:** Phase 4 integration review
+
+### Summary
+
+Reviewed AntiGravity's Phase 4 submission (`analyst-inbox/2026-04-09-033000-phase4-briefing.md`).
+
+**Confirmed complete:**
+- Socket.IO end-to-end: `hub.Start()` and `hub.Handler()` on `:8080` wired in `main.go` ✓
+- Control panel `socket.on('verification_event')` correctly wired to `handleIncomingEvent` ✓
+- `DhammaReflection` extracted as standalone component with `getBilaraLink()` producing `https://suttacentral.net/{sutta}/en/sujato` deep links ✓
+- Four TranslucentGate safety invariant tests: approve disabled without signature; enabled when safe+signed; permanently disabled for UNSAFE verdict; disabled with analyst veto — all correct ✓
+- Phase 4 carry-over: `SaveMerkleLeaf`/`UpdateProposalVerdict` error returns now checked and propagated in `ApproveAction`/`VetoAction` ✓
+
+**Blocking issues (CONDITIONAL):**
+- CRITICAL-1: `denyProposal` constructs `new ApprovalRequest()` and passes it to `grpcRef.current.vetoAction()`. The generated client signature requires `VetoRequest`. The proto binary encoding is wrong — `ApprovalRequest` field 2 is `operator_signature` (string), `VetoRequest` field 2 is `vetoed_by` (string). The veto path is functionally broken.
+- CRITICAL-2: `GRPC_URL = 'http://localhost:50051'` targets a raw gRPC server. Browsers cannot speak raw gRPC. No Envoy proxy or `grpcweb` wrapper exists in the codebase. Every `approveAction`/`vetoAction` call from the browser will fail with a network error. The Translucent Gate cannot approve or deny anything.
+
+Verdict: CONDITIONAL — `analyst-verdicts/2026-04-09-040000-phase4-review.md`
+
+### Handoff to AntiGravity
+
+Two focused fixes, no architectural changes:
+1. `control-panel/src/hooks/useOrchestrator.ts`: Replace `new ApprovalRequest()` with `new VetoRequest()` in `denyProposal`. Import `VetoRequest` from `@/types/orchestrator_pb`.
+2. `root-spine/cmd/sati-central/main.go`: Add `github.com/improbable-eng/grpc-web/go/grpcweb` wrapper. Serve wrapped handler on `:8081`. Update `GRPC_URL` in the hook to `http://localhost:8081`.
+3. Submit updated briefing to `analyst-inbox/`.
 
 ---
 

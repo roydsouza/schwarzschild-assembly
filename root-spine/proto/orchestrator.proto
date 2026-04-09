@@ -73,6 +73,12 @@ service Orchestrator {
   // ReadAnalystVerdict reads the latest verdict for a given topic or proposal.
   // Called by AntiGravity to check if a verdict has been issued.
   rpc ReadAnalystVerdict(VerdictQuery) returns (AnalystVerdict);
+
+  // ── Factory metrics reporting ──────────────────────────────────────────────
+
+  // ReportMetrics submits domain-specific metric values to the global fitness vector.
+  // Called periodically by factories after their internal collection loops.
+  rpc ReportMetrics(MetricReport) returns (OperationStatus);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -628,4 +634,14 @@ message RegistrationResult {
   int32 registered_count = 3;
   // error_message is populated if success is false.
   string error_message = 4;
+}
+// MetricReport carries domain-specific metric updates from a factory.
+message MetricReport {
+  // factory_id of the submitting factory instance.
+  string factory_id = 1;
+  // metrics maps metric ID to current scalar value.
+  // Example: {"defi_coverage": 85.2, "rag_quality": 0.88}
+  map<string, double> metrics = 2;
+  // observed_at_ms is the Unix ms timestamp of the measurement.
+  int64 observed_at_ms = 3;
 }

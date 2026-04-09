@@ -49,4 +49,9 @@ export interface ProposalResolution {
   fitness?: FitnessImpact[];
   resolution: ResolutionState;
   audit?: MerkleNote;
+  analystVerdict?: {
+    status: 'APPROVED' | 'VETOED' | 'PENDING';
+    rationale: string;
+    date: string;
+  };
 }

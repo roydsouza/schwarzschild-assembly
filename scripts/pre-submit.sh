@@ -8,6 +8,8 @@
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+export CPATH="${CPATH:-}:/opt/homebrew/include:/usr/local/include"
+export LIBRARY_PATH="${LIBRARY_PATH:-}:/opt/homebrew/lib:/usr/local/lib"
 
 PASS=0
 FAIL=0
@@ -112,7 +114,7 @@ for metrics_file in factories/*/domain-fitness/metrics.go; do
     else
       fail "metric ID '$metric_id' defined in $metrics_file but NOT found in $mcp_server"
     fi
-  done < <(grep -oP 'MetricId:\s*"\K[^"]+' "$metrics_file")
+  done < <(perl -ne 'print "$1\n" while /MetricId:\s*"\K([^"]+)/g' "$metrics_file")
 done
 
 # Proto types used in TypeScript must exist in generated bindings
@@ -123,7 +125,7 @@ if [ -f control-panel/src/types/orchestrator_pb.d.ts ]; then
     else
       fail "TypeScript proto type '$msg_type' used but NOT found in orchestrator_pb.d.ts"
     fi
-  done < <(grep -rhP 'new [A-Z][A-Za-z]+\(\)' control-panel/src/ 2>/dev/null | grep -oP 'new \K[A-Z][A-Za-z]+' | sort -u)
+  done < <(grep -rh 'new [A-Z][A-Za-z]+()' control-panel/src/ 2>/dev/null | perl -ne 'print "$1\n" while /new ([A-Z][A-Za-z]+)/g' | sort -u)
 fi
 
 # ── 4. ANATOMY CHECK ──────────────────────────────────────────────
@@ -174,7 +176,7 @@ done
 
 # No committed binaries (files with no extension or known binary extensions)
 untracked_binaries=$(git ls-files --others --exclude-standard | \
-  grep -vE '\.(go|rs|pl|py|ts|tsx|js|json|yaml|yml|toml|md|sh|proto|css|lock|sum|mod|txt|html|d\.ts)$' | \
+  grep -vE '\.(go|rs|pl|py|ts|tsx|js|json|sql|yaml|yml|toml|md|sh|proto|css|lock|sum|mod|txt|html|d\.ts)$' | \
   grep -v '\.git' || true)
 if [ -z "$untracked_binaries" ]; then
   ok "No untracked binaries"

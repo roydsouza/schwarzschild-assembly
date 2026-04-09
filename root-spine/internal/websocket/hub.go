@@ -1,61 +1,71 @@
 package websocket
 
 import (
-	"sync"
+	"encoding/json"
+	"net/http"
 
+	socketio "github.com/googollee/go-socket.io"
 	"github.com/rds/sati-central/root-spine/internal/grpc/pb"
 	"go.uber.org/zap"
 )
 
-// Client represents a connected WebSocket client (e.g., Control Panel).
-type Client struct {
-	ID   string
-	Send chan *pb.VerificationEvent
-}
-
-// Hub maintains the set of active clients and broadcasts messages to the clients.
+// Hub maintains the set of active Socket.IO connections and broadcasts events.
 type Hub struct {
 	logger  *zap.Logger
-	clients map[string]*Client
-	mu      sync.RWMutex
+	server  *socketio.Server
 }
 
-// NewHub creates a new Hub.
+// NewHub creates a new Socket.IO hub.
 func NewHub(logger *zap.Logger) *Hub {
+	server := socketio.NewServer(nil)
+
+	server.OnConnect("/", func(s socketio.Conn) error {
+		s.SetContext("")
+		logger.Info("client connected", zap.String("id", s.ID()))
+		return nil
+	})
+
+	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		logger.Info("client disconnected", zap.String("id", s.ID()), zap.String("reason", reason))
+	})
+
+	server.OnError("/", func(s socketio.Conn, e error) {
+		logger.Error("socket.io error", zap.Error(e))
+	})
+
 	return &Hub{
-		logger:  logger,
-		clients: make(map[string]*Client),
+		logger: logger,
+		server: server,
 	}
 }
 
-// Register adds a client to the hub.
-func (h *Hub) Register(c *Client) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.clients[c.ID] = c
-	h.logger.Info("client registered", zap.String("client_id", c.ID))
+// Start initiates the Socket.IO server loop.
+func (h *Hub) Start() {
+	go h.server.Serve()
 }
 
-// Unregister removes a client from the hub.
-func (h *Hub) Unregister(id string) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if _, ok := h.clients[id]; ok {
-		delete(h.clients, id)
-		h.logger.Info("client unregistered", zap.String("client_id", id))
-	}
+// Stop shuts down the Socket.IO server.
+func (h *Hub) Stop() {
+	h.server.Close()
 }
 
-// Broadcast sends a message to all registered clients.
+// Handler returns the HTTP handler for Socket.IO.
+func (h *Hub) Handler() http.Handler {
+	return h.server
+}
+
+// Broadcast sends a pb.VerificationEvent to all connected clients.
 func (h *Hub) Broadcast(event *pb.VerificationEvent) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	for _, c := range h.clients {
-		select {
-		case c.Send <- event:
-		default:
-			h.logger.Warn("client send buffer full, skipping", zap.String("client_id", c.ID))
-		}
+	// Convert proto message to JSON for the browser
+	data, err := json.Marshal(event)
+	if err != nil {
+		h.logger.Error("failed to marshal event for broadcast", zap.Error(err))
+		return
 	}
+
+	h.logger.Info("broadcasting event", 
+		zap.String("proposal_id", event.ProposalId),
+		zap.String("type", event.EventType.String()))
+		
+	h.server.BroadcastToRoom("/", "", "verification_event", string(data))
 }

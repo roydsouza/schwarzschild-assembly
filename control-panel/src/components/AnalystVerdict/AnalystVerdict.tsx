@@ -3,7 +3,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import styles from './AnalystVerdict.module.css';
-import { AlertShield, CheckCircle, XCircle, Info } from 'lucide-react';
+import { ShieldAlert, CheckCircle, XCircle, Info } from 'lucide-react';
 
 export type VerdictStatus = 'APPROVED' | 'VETOED' | 'PENDING';
 
@@ -30,7 +30,11 @@ export default function AnalystVerdict({ status, rationale, date }: Props) {
       </header>
       
       <div className={styles.content}>
-        <ReactMarkdown className={styles.markdown}>
+        <ReactMarkdown 
+          components={{
+            p: ({node, ...props}) => <p className={styles.markdown} {...props} />
+          }}
+        >
           {rationale}
         </ReactMarkdown>
       </div>
