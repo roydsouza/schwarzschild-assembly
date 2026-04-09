@@ -3,6 +3,9 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,7 +34,14 @@ func NewStore(ctx context.Context, connStr string) (*Store, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	return &Store{pool: pool}, nil
+	s := &Store{pool: pool}
+
+	// Apply migrations
+	if err := s.ApplyMigrations(ctx, "root-spine/internal/persistence/migrations"); err != nil {
+		return nil, fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	return s, nil
 }
 
 // Close closes the database connection pool.
@@ -65,6 +75,17 @@ func (s *Store) GetOrCreateFactory(ctx context.Context, f Factory) (uuid.UUID, e
 	return id, nil
 }
 
+// GetDefaultFactoryID retrieves or creates a "global" factory instance.
+func (s *Store) GetDefaultFactoryID(ctx context.Context) (uuid.UUID, error) {
+	return s.GetOrCreateFactory(ctx, Factory{
+		ID:         uuid.Nil,
+		Name:       "global-factory",
+		Type:       "system",
+		ConfigJSON: []byte("{}"),
+		State:      "RUNNING",
+	})
+}
+
 // SaveProposal persists an action proposal.
 func (s *Store) SaveProposal(ctx context.Context, p_id uuid.UUID, f_id uuid.UUID, agentID, desc, hash string, isSec bool, subAt time.Time) error {
 	_, err := s.pool.Exec(ctx, `
@@ -87,5 +108,98 @@ func (s *Store) UpdateProposalVerdict(ctx context.Context, id uuid.UUID, verdict
 	if err != nil {
 		return fmt.Errorf("failed to update proposal verdict: %w", err)
 	}
+	return nil
+}
+
+// SaveMerkleLeaf persists a leaf in the audit log.
+func (s *Store) SaveMerkleLeaf(ctx context.Context, index int64, pID uuid.UUID, hash, eventType, fingerprint, root string) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO merkle_leaves (leaf_index, proposal_id, leaf_hash_hex, event_type, policy_fingerprint_hex, merkle_root_hex)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		index, pID, hash, eventType, fingerprint, root)
+	if err != nil {
+		return fmt.Errorf("failed to save merkle leaf: %w", err)
+	}
+	return nil
+}
+
+// GetMerkleLeaves retrieves all committed leaves in order.
+func (s *Store) GetMerkleLeaves(ctx context.Context) ([]string, error) {
+	rows, err := s.pool.Query(ctx, "SELECT leaf_hash_hex FROM merkle_leaves ORDER BY leaf_index ASC")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query merkle leaves: %w", err)
+	}
+	defer rows.Close()
+
+	var leaves []string
+	for rows.Next() {
+		var h string
+		if err := rows.Scan(&h); err != nil {
+			return nil, fmt.Errorf("failed to scan leaf: %w", err)
+		}
+		leaves = append(leaves, h)
+	}
+	return leaves, nil
+}
+// ApplyMigrations runs any pending SQL migrations in the specified directory.
+func (s *Store) ApplyMigrations(ctx context.Context, migrationsDir string) error {
+	// 1. Create migrations tracking table
+	_, err := s.pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`)
+	if err != nil {
+		return fmt.Errorf("failed to create migrations table: %w", err)
+	}
+
+	// 2. Read migration files
+	files, err := filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
+	if err != nil {
+		return fmt.Errorf("failed to glob migrations: %w", err)
+	}
+	sort.Strings(files)
+
+	for _, file := range files {
+		version := filepath.Base(file)
+
+		// 3. Check if already applied
+		var exists bool
+		err := s.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)", version).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check migration state: %w", err)
+		}
+
+		if exists {
+			continue
+		}
+
+		// 4. Apply migration
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read migration %s: %w", version, err)
+		}
+
+		tx, err := s.pool.Begin(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to start transaction: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		if _, err := tx.Exec(ctx, string(content)); err != nil {
+			return fmt.Errorf("failed to execute migration %s: %w", version, err)
+		}
+
+		if _, err := tx.Exec(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", version); err != nil {
+			return fmt.Errorf("failed to record migration %s: %w", version, err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return fmt.Errorf("failed to commit migration %s: %w", version, err)
+		}
+
+		fmt.Printf("Applied migration: %s\n", version)
+	}
+
 	return nil
 }

@@ -151,10 +151,10 @@ impl Z3PolicyEngine {
                         solver.assert(&is_prefix.implies(&vars.is_security_adjacent));
                     }
                     _ => {
-                        // Skip constraints we don't know how to verify yet.
-                        // We do NOT return an error here because that would block admission
-                        // of any custom constraint. The safety layer still has its
-                        // mandatory core constraints in the solver.
+                        return Err(format!(
+                            "Invariant violated: constraint '{}' reached verify() but was not filtered at registration",
+                            constraint.name
+                        ));
                     }
                 }
             }

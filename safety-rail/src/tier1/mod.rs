@@ -8,8 +8,7 @@ use crate::tier1::fingerprint::compute_fingerprint;
 use opentelemetry::{global, metrics::{Counter, Histogram, UpDownCounter}};
 use sha2::{Digest, Sha256};
 use std::time::Instant;
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::runtime;
+use opentelemetry_sdk::metrics::MeterProvider;
 
 mod fingerprint;
 mod sandbox;
@@ -29,20 +28,12 @@ pub struct Tier1SafetyRail {
 }
 
 impl Tier1SafetyRail {
-    pub fn new() -> Result<Self, String> {
-        let z3_engine = Z3PolicyEngine::new();
-        
-        // [SIGNIFICANT-6] Initialize OTLP meter provider
-        let exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint("http://localhost:4317");
-        let provider = opentelemetry_otlp::new_pipeline()
-            .metrics(runtime::Tokio)
-            .with_exporter(exporter)
-            .build()
-            .map_err(|e| format!("Failed to build OTel pipeline: {}", e))?;
-        global::set_meter_provider(provider);
+    pub fn new(meter_provider: Option<MeterProvider>) -> Result<Self, String> {
+        if let Some(provider) = meter_provider {
+            global::set_meter_provider(provider);
+        }
 
+        let z3_engine = Z3PolicyEngine::new();
         let initial_rail = Self {
             z3_engine,
             sandbox: WasmSandbox::new()?,
@@ -249,6 +240,20 @@ impl SafetyRail for Tier1SafetyRail {
     }
 
     fn register_constraint(&self, constraint: &PolicyConstraint) -> crate::RegistrationResult {
+        // [FIX] REGRESSION-5: Guard against DoS vector by rejecting unknown constraint names
+        // at the registration gate. This keeps verify() clean and invariant-safe.
+        const SUPPORTED_CONSTRAINT_NAMES: &[&str] = &[
+            "safety_no_self_modify_safety_rail",
+            "audit_no_merkle_deletion",
+            "security_no_unverified_proto_change",
+        ];
+        if !SUPPORTED_CONSTRAINT_NAMES.contains(&constraint.name.as_str()) {
+            return crate::RegistrationResult::UnsupportedAssertionKind {
+                id: constraint.id.clone(),
+                supported: "safety_no_self_modify_safety_rail, audit_no_merkle_deletion, security_no_unverified_proto_change".to_string(),
+            };
+        }
+
         let payload = crate::tier1::z3_policy::ProposalPayload {
             operation_type: OperationType::RegisterConstraint,
             target_component: match constraint.category {
@@ -278,6 +283,17 @@ impl SafetyRail for Tier1SafetyRail {
             submitted_at_ms: 0,
         };
 
+        let current_fp = self.policy_fingerprint();
+        {
+            let constraints = self.z3_engine.constraints();
+            if constraints.iter().any(|c| c.id == constraint.id) {
+                return crate::RegistrationResult::Duplicate { 
+                    id: constraint.id.clone(),
+                    existing_fingerprint: current_fp,
+                };
+            }
+        }
+
         let verdict = self.verify_proposal(&proposal);
         if !verdict.is_safe() {
             return crate::RegistrationResult::Rejected {
@@ -295,7 +311,6 @@ impl SafetyRail for Tier1SafetyRail {
             };
         }
 
-        let current_fp = self.policy_fingerprint();
         match self.z3_engine.add_constraint(constraint.clone()) {
             Ok(_) => {
                 let fp = self.policy_fingerprint();
@@ -308,11 +323,6 @@ impl SafetyRail for Tier1SafetyRail {
             Err(e) => {
                 if e == "MissingJustification" {
                     crate::RegistrationResult::MissingJustification { id: constraint.id.clone() }
-                } else if e == "Duplicate" {
-                    crate::RegistrationResult::Duplicate { 
-                        id: constraint.id.clone(),
-                        existing_fingerprint: current_fp,
-                    }
                 } else {
                     crate::RegistrationResult::Rejected {
                         id: constraint.id.clone(),

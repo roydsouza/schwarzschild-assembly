@@ -4,22 +4,56 @@ last_agent: claude-code
 last_session: 2026-04-09
 phase_active: 2
 phase_status: conditional-requires-fixes
-next_phase: 2-remediation-round2
+next_phase: 2-remediation-round3
 in_progress: []
 running_services: []
-recommended_next_action: "AntiGravity: Fix three remaining Phase 2 items (unsafe impl, register_constraint tests, OTel provider). Run cargo test --features tier1 and smoke test. Submit briefing to analyst-inbox/."
+recommended_next_action: "AntiGravity: Implement 4 missing items from Phase 3 CONDITIONAL verdict. Do not file briefing until all 4 exist on disk and go build ./... passes."
 blockers:
-  - "Phase 2: unsafe impl Send/Sync still present (z3_policy.rs:63-64) — delete both lines, remove ctx field, create fresh Context per verify() call"
-  - "Phase 2: register_constraint integration tests missing — need MissingJustification + Duplicate rejection tests through public interface"
-  - "Phase 2: OTel global meter provider not initialized — metrics are no-ops; initialize OTLP exporter in Tier1SafetyRail::new()"
-  - "Phase 3: 4 compile errors in server.go (NewBridge sig, req.ArtifactId, VERDICT_PENDING, zeroed hash) — do not touch until Phase 2 approved"
-  - "Phase 3: Merkle not persisted, migrations never applied, MCP/WS/Gate empty, ApproveAction unimplemented"
+  - "Phase 3: internal/websocket/ does not exist — implement Hub + Broadcast, wire into SubmitProposal"
+  - "Phase 3: internal/gate/ does not exist — implement Gate + Route, wire into SubmitProposal for is_security_adjacent"
+  - "Phase 3: ApproveAction and VetoAction not implemented in server.go — implement with DB update + SaveMerkleLeaf"
+  - "Phase 3: SaveMerkleLeaf never called — call after UpdateProposalVerdict in SubmitProposal"
 ---
 
 # Sati-Central SYNC_LOG
 
 Joint handoff log between Roy, Claude Code (Analyst Droid), and AntiGravity (Worker Droid).
 Written at close of each session. Parse the YAML frontmatter for machine-readable state.
+
+---
+
+## 2026-04-09 — Claude Code Session 4 (Phase 2 Round 3 Review)
+
+**Agent:** Claude Code (Analyst Droid)
+**Duration:** Phase 2 round 3 review
+
+### Summary
+
+Reviewed AntiGravity's third Phase 2 submission. Read all changed files: `z3_policy.rs`, `mod.rs`, `tests/contract_compliance_tests.rs`, `tests/sandbox_tests.rs`, `src/tier1/c_api.rs`, and the `contract_tests` module in `lib.rs`.
+
+**3 previously-required items resolved:**
+- CRITICAL-4: `unsafe impl Send/Sync` deleted. `Z3PolicyEngine` is now purely `Mutex<Vec<PolicyConstraint>>`. Fresh `Config`/`Context`/`Solver` per `verify()` call. ✓
+- CRITICAL-3: `current_fp` captured before `add_constraint`; `Duplicate` result correctly populated. ✓
+- SIGNIFICANT-6: OTLP `SdkMeterProvider` initialized in `new()`. ✓ (with new defect — see below)
+
+**2 items require fixes:**
+- REGRESSION-5: `verify()` unknown constraint arm was `Err(...)` in round 2 (correct). Round 3 reverted it to silent skip. This creates permanent divergence between `policy_fingerprint()` (which counts all registered constraints) and what Z3 actually enforces. Security defect. Must restore `Err` return.
+- NEW-1: `runtime::Tokio` used in synchronous `Tier1SafetyRail::new()`. Tests pass because they use `#[tokio::test]`. In production, the CGO bridge calls `safety_rail_new()` from a C thread — no Tokio runtime, panic, UB across FFI. Fix: change signature to `new(Option<SdkMeterProvider>)` and let caller inject the provider. CGO bridge calls `new(None)`.
+
+**Test coverage assessment:**
+- `contract_compliance_tests.rs` (6 tests): Good coverage of stale proof, empty justification, duplicate, timing, violation, tampered payload.
+- `sandbox_tests.rs` (3 tests): `test_sandbox_memory_limit_enforced` has `_ => {}` match arm making it a no-op assertion — advisory fix before APPROVED.
+- Two `contract_tests` helpers from lib.rs spec (`assert_empty_policy_fingerprint`, `assert_verify_does_not_panic`) not yet invoked — advisory.
+
+Verdict written to `analyst-verdicts/2026-04-09-020000-phase2-round3-review.md`.
+
+### Handoff to AntiGravity
+
+Two required fixes (both small, no architectural changes):
+1. `z3_policy.rs`: Restore `return Err(format!("Unknown constraint type not yet implemented: {}", constraint.name))` in the `_` match arm of `verify()`
+2. `mod.rs` + `c_api.rs`: Change `new()` to `new(meter_provider: Option<SdkMeterProvider>)`; remove internal `runtime::Tokio` pipeline; update `safety_rail_new()` in c_api.rs to call `Tier1SafetyRail::new(None)`
+3. Run `cargo test --features tier1` — all 15+ tests must pass
+4. Submit briefing to `analyst-inbox/`
 
 ---
 

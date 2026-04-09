@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 
 #[tokio::test]
 async fn test_stale_proof_rejected() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     
     // 1. Create a safe artifact
     let payload = b"{\"operation_type\":\"modify_file\",\"target_component\":\"safety-rail\",\"change_description\":\"test\",\"context\":null}";
@@ -37,7 +37,7 @@ async fn test_stale_proof_rejected() {
     id_bytes[0] = 0xFF;
     rail.register_constraint(&PolicyConstraint {
         id: ConstraintId::new(id_bytes),
-        name: "extra".to_string(),
+        name: "safety_no_self_modify_safety_rail".to_string(), // MUST USE SUPPORTED NAME
         assertion: ConstraintAssertion::SmtLib2("(assert true)".to_string()),
         category: ConstraintCategory::Security,
         severity: ConstraintSeverity::Mandatory,
@@ -52,12 +52,12 @@ async fn test_stale_proof_rejected() {
 
 #[tokio::test]
 async fn test_empty_justification_rejected() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     let mut id_bytes = [0u8; 16];
     id_bytes[0] = 0xFE;
     let constraint = PolicyConstraint {
         id: ConstraintId::new(id_bytes),
-        name: "test_empty".to_string(),
+        name: "safety_no_self_modify_safety_rail".to_string(), // MUST USE SUPPORTED NAME
         assertion: ConstraintAssertion::SmtLib2("(assert true)".to_string()),
         category: ConstraintCategory::Security,
         severity: ConstraintSeverity::Mandatory,
@@ -70,12 +70,12 @@ async fn test_empty_justification_rejected() {
 
 #[tokio::test]
 async fn test_duplicate_constraint_rejected() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     let mut id_bytes = [0u8; 16];
     id_bytes[0] = 0xFD;
     let constraint = PolicyConstraint {
         id: ConstraintId::new(id_bytes),
-        name: "test_dup".to_string(),
+        name: "safety_no_self_modify_safety_rail".to_string(), // MUST USE SUPPORTED NAME
         assertion: ConstraintAssertion::SmtLib2("(assert true)".to_string()),
         category: ConstraintCategory::Security,
         severity: ConstraintSeverity::Mandatory,
@@ -95,7 +95,7 @@ async fn test_duplicate_constraint_rejected() {
 
 #[tokio::test]
 async fn test_verify_timing_under_100ms() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     let payload = b"{\"operation_type\":\"modify_file\",\"target_component\":\"safety-rail\",\"change_description\":\"test\",\"context\":null}";
     let mut hasher = Sha256::new();
     hasher.update(payload);
@@ -126,7 +126,7 @@ async fn test_verify_timing_under_100ms() {
 
 #[tokio::test]
 async fn test_mandatory_constraint_violation_produces_unsafe_verdict() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     
     // Violates Constraint 1: safety-rail modify without is_security_adjacent=true
     let payload = b"{\"operation_type\":\"modify_file\",\"target_component\":\"safety-rail\",\"change_description\":\"test\",\"context\":null}";
@@ -151,7 +151,7 @@ async fn test_mandatory_constraint_violation_produces_unsafe_verdict() {
 
 #[tokio::test]
 async fn test_tampered_payload_rejected() {
-    let rail = Tier1SafetyRail::new().unwrap();
+    let rail = Tier1SafetyRail::new(None).unwrap();
     let payload = b"{\"operation_type\":\"modify_file\",\"target_component\":\"safety-rail\",\"change_description\":\"test\",\"context\":null}";
     let payload_hash = [0u8; 32]; // WRONG HASH
 
@@ -168,4 +168,51 @@ async fn test_tampered_payload_rejected() {
 
     let verdict = rail.verify_proposal(&proposal);
     assert!(matches!(verdict, SafetyVerdict::TamperedPayload { .. }), "Expected TamperedPayload, got {:?}", verdict);
+}
+
+#[tokio::test]
+async fn test_contract_advisory_helpers() {
+    let rail = Tier1SafetyRail::new(None).unwrap();
+    
+    // Advisory 105: assert_empty_policy_fingerprint
+    // Note: Tier1SafetyRail registers 3 initial constraints, so it is NOT empty by default.
+    // However, we can verify the trait's empty() constant logic or use a fresh engine if it was accessible.
+    // For this test, we verify that it is NOT the empty fingerprint.
+    let fp = rail.policy_fingerprint();
+    assert_ne!(fp.digest, safety_rail::PolicyFingerprint::empty().digest);
+    
+    // Advisory 106: assert_verify_does_not_panic
+    let payload = b"{\"operation_type\":\"modify_file\",\"target_component\":\"test\",\"change_description\":\"test\",\"context\":null}";
+    let mut hasher = Sha256::new();
+    hasher.update(payload);
+    let proposal = ActionProposal {
+        id: [1u8; 16],
+        agent_id: "test".to_string(),
+        description: "test".to_string(),
+        payload: payload.to_vec(),
+        payload_hash: hasher.finalize().into(),
+        target_path: Some("test.rs".to_string()),
+        is_security_adjacent: false,
+        submitted_at_ms: 0,
+    };
+    contract_tests::assert_verify_does_not_panic(&rail, &proposal);
+}
+
+#[tokio::test]
+async fn test_unsupported_constraint_rejected() {
+    let rail = Tier1SafetyRail::new(None).unwrap();
+    let mut id_bytes = [0u8; 16];
+    id_bytes[0] = 0xAA;
+    let result = rail.register_constraint(&PolicyConstraint {
+        id: ConstraintId::new(id_bytes),
+        name: "unknown_constraint_kind_to_trigger_unsupported".to_string(),
+        assertion: ConstraintAssertion::SmtLib2("(assert true)".to_string()),
+        category: ConstraintCategory::Security,
+        severity: ConstraintSeverity::Mandatory,
+        justification: "test".to_string(),
+        author: "test".to_string(),
+        authored_at_ms: 0,
+    });
+    
+    assert!(matches!(result, safety_rail::RegistrationResult::UnsupportedAssertionKind { .. }), "Expected UnsupportedAssertionKind, got {:?}", result);
 }

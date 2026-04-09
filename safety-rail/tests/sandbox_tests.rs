@@ -4,7 +4,7 @@ use safety_rail::tier1::z3_policy::{ProposalPayload, OperationType};
 use wat;
 
 fn setup_rail() -> Tier1SafetyRail {
-    Tier1SafetyRail::new().expect("Failed to create Tier1SafetyRail")
+    Tier1SafetyRail::new(None).expect("Failed to create Tier1SafetyRail")
 }
 
 fn create_verified_artifact(rail: &Tier1SafetyRail, wasm_bytes: Vec<u8>) -> VerifiedArtifact {
@@ -110,8 +110,7 @@ async fn test_sandbox_memory_limit_enforced() {
     let result = rail.execute_sandboxed(&artifact);
     match result {
         ExecutionResult::Failure { .. } => {
-             // In Tier 1 with ResourceLimiter, growth simply fails if it exceeds limit.
         }
-        _ => {}
+        _ => panic!("Expected failure due to memory limit, got {:?}", result),
     }
 }

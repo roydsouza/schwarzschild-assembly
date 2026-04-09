@@ -12,6 +12,7 @@ import "C"
 import (
 	"errors"
 	"unsafe"
+	"go.uber.org/zap"
 )
 
 // Bridge wraps the C-API to the Safety Rail.
@@ -20,7 +21,9 @@ type Bridge struct {
 }
 
 // NewBridge initializes the Safety Rail bridge.
-func NewBridge() (*Bridge, error) {
+func NewBridge(logger *zap.Logger, libPath string) (*Bridge, error) {
+    // Note: libPath is currently ignored as the path is hardcoded in cgo LDFLAGS
+    // but we keep the signature for main.go compatibility and future flexibility.
 	handle := C.safety_rail_new()
 	if handle == nil {
 		return nil, errors.New("failed to initialize safety rail")

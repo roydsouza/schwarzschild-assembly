@@ -1,7 +1,7 @@
-use crate::{ActionProposal, SafetyRail, VerifiedArtifact, SafetyVerdict, ExecutionResult, SafetyTier};
+use crate::{ActionProposal, SafetyRail, SafetyVerdict};
 use crate::tier1::Tier1SafetyRail;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_void};
+use std::os::raw::c_char;
 use std::slice;
 
 /// Opaque handle to a SafetyRail implementation.
@@ -32,7 +32,7 @@ pub struct C_ExecutionResult {
 /// Returns null on failure.
 #[no_mangle]
 pub extern "C" fn safety_rail_new() -> *mut SafetyRailHandle {
-    match Tier1SafetyRail::new() {
+    match Tier1SafetyRail::new(None) {
         Ok(rail) => Box::into_raw(Box::new(SafetyRailHandle(Box::new(rail)))),
         Err(_) => std::ptr::null_mut(),
     }

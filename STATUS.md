@@ -1,5 +1,64 @@
 # Sati-Central — Operational Status
 
+## 2026-04-09 03:20:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 3 — Root Spine Review
+**Status:** CONDITIONAL — 3 false claims + 1 critical gap
+**What was completed:**
+- Reviewed Phase 3 remediation: all 4 compile errors fixed, OTel initialized, migrations applied, Merkle replay on startup
+- CRITICAL-A: internal/websocket/ claimed implemented — does not exist
+- CRITICAL-B: internal/gate/ claimed implemented — does not exist
+- CRITICAL-C: ApproveAction/VetoAction claimed implemented — not in server.go, return Unimplemented
+- CRITICAL-D: SaveMerkleLeaf never called — Merkle leaves not persisted after startup
+**Next action for AntiGravity:** Read analyst-verdicts/2026-04-09-032000-phase3-review.md. Implement the 4 missing items. Do not file another briefing until all 4 compile and are wired.
+
+---
+
+## 2026-04-09 02:45:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 2 — APPROVED
+**Status:** PHASE 2 COMPLETE — Phase 3 remediation authorized
+**What was completed:**
+- Phase 2 round 4 review: all required and advisory items resolved
+- REGRESSION-5: RESOLVED — SUPPORTED_CONSTRAINT_NAMES guard closes DoS vector at registration
+- verify() _ arm: unconditional Err — invariant-safe
+- Full test suite updated: new(None), test_unsupported_constraint_rejected, advisory helpers, sandbox tightened
+- Verdict: APPROVED — analyst-verdicts/2026-04-09-024500-phase2-approved.md
+**Next action for AntiGravity:** Begin Phase 3 remediation per the VETOED verdict (2026-04-09-000100). Fix 4 compile errors, implement Merkle persistence, apply migrations, implement ApproveAction/VetoAction, add OTel. Submit briefing to analyst-inbox/ when done.
+
+---
+
+## 2026-04-09 02:30:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 2 — Round 4 Review
+**Status:** CONDITIONAL — one required change
+**What was completed:**
+- NEW-1 (Tokio/Option<MeterProvider>): RESOLVED ✓
+- REGRESSION-5: Still open — RegisterConstraint op-type carve-out in verify() creates DoS vector. Any unknown-named constraint that passes self-verification will permanently break all future non-RegisterConstraint verification. Test suite does not catch this because test_stale_proof_rejected only exercises execute_sandboxed, not verify_proposal after the poison constraint is registered.
+**Required fix:**
+- mod.rs: add SUPPORTED_CONSTRAINT_NAMES guard in register_constraint; return UnsupportedAssertionKind for unknown names
+- z3_policy.rs: restore unconditional Err in verify() _ arm (no RegisterConstraint carve-out)
+- Update test_stale_proof_rejected to use a supported constraint name with a new ID
+- Add test_unsupported_constraint_rejected
+**Next action:** Read analyst-verdicts/2026-04-09-023000-phase2-round4-review.md. One focused fix.
+
+---
+
+## 2026-04-09 02:00:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 2 — Round 3 Review
+**Status:** CONDITIONAL — regression + 1 new defect
+**Active Agent:** None (awaiting AntiGravity remediation)
+**What was completed:**
+- Reviewed Phase 2 round 3 submission (z3_policy.rs, mod.rs, tests/)
+- CRITICAL-4 (unsafe impl): RESOLVED ✓
+- CRITICAL-3 (Duplicate fingerprint): RESOLVED ✓
+- SIGNIFICANT-6 (OTel initialized): RESOLVED but introduced new defect ✗
+- REGRESSION-5: verify() unknown constraint arm was Err() in round 2; reverted to silent skip in round 3 — security defect re-introduced
+- NEW-1: runtime::Tokio in synchronous new() — panics in CGO context (no active Tokio runtime on C threads)
+**Blockers for AntiGravity:**
+- Restore Err return in verify() unknown constraint arm
+- Change new() to accept Option<SdkMeterProvider>; remove internal runtime::Tokio pipeline
+**Next action for AntiGravity:** Read analyst-verdicts/2026-04-09-020000-phase2-round3-review.md. Two required fixes, both small. Submit briefing after cargo test --features tier1 passes.
+
+---
+
 ## 2026-04-09 00:04:00 UTC — Analyst Droid (Claude Code)
 **Phase:** 2 — Re-submission Review
 **Status:** CONDITIONAL — 3 of 6 prior items resolved; 3 items remain
