@@ -1,74 +1,75 @@
 # 🔘 Schwarzschild Assembly
 
-![Sati-Central Space Factory](assets/hero.png)
-
-```text
-// LOG_LEVEL: 4 (CRITICAL)
-// SYSTEM_ID: SATI-CENTRAL-ALPHA
-// PROTOCOL: SCHWARZSCHILD-RADIUS-ENFORCEMENT
-// STATUS: PHASE_4_COMPLETE
-```
+![Sati-Central Space Factory](file:///Users/rds/antigravity/schwarzschild-assembly/assets/hero.png)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-**[📍 Navigation Map](../CONTENTS.md)**
+**[📍 Project Roadmap](file:///Users/rds/antigravity/schwarzschild-assembly/CONTENTS.md)**
 
 ---
 
-## 🌌 Project Overview
+## 🌌 The Problem: The "AI Slop" Trap
 
-**Schwarzschild Assembly** is the high-integrity orchestration substrate for the **Sati-Central** multi-factory agentic ecosystem. It defines a deterministic "Event Horizon" for autonomous AI actions.
+In the rapid evolution of AI agents, developers often fall into **"vibe coding"**—building systems that rely on the model's current "vibe" or probabilistic output rather than deterministic safety. This leads to **AI Slop**: fragmented, unverified, and increasingly complex codebases that work by coincidence rather than design.
 
-In the vacuum of unconstrained agency, the **Verification Gap** allows for catastrophic state corruption. This assembly ensures that no proposal crosses the event horizon without a mathematically proven safety certificate.
+When AI agents modify their own code or execute real-world actions (e.g., spending funds, shell execution, or repo changes) without a strict safety substrate, the system inevitably drifts toward catastrophic state corruption.
 
-### 📜 The Prime Directives (Standing Orders)
-1. **Verified Evolution**: You cannot safely evolve what you cannot formally verify.
-2. **Measured Evolution**: You cannot effectively evolve what you cannot measure.
-3. **Observed Evolution**: You cannot measure what you cannot observe.
+## 🏗️ The Solution: The "Dark Factory"
+
+**Schwarzschild Assembly** is a high-integrity orchestration layer designed to stop AI Slop at the source. It implements a **Dark Factory** architecture—a fully autonomous production environment where agents build agents, but every action is strictly governed by a mathematical "Event Horizon."
+
+### How a Dark Factory Works
+A Dark Factory isn't just "automated"; it's **self-evolutionary**.
+1. **The Orchestrator (Root Spine)**: A Go-based central nervous system that manages agent requests.
+2. **The Integrity Gate (Safety Rail)**: A Rust-based formal verification layer. No action crosses the "Event Horizon" into reality without a proven safety certificate.
+3. **The Audit Log (Merkle Tree)**: A tamper-proof history of every decision, ensuring full accountability for every autonomous evolution.
+
+### What Makes This Unique?
+Unlike generic CI/CD or monitoring tools, our assembly is **Self-Evolutionary**:
+- **Continuous Fitness Evaluation**: The system constantly measures itself against a "Fitness Vector"—a 5-dimensional metric tracking Safety, Audit Integrity, Ethical Alignment (Dhamma), Performance, and Cost.
+- **Autonomous Synthetic Analysts**: Specialized analyst agents observe the production loop, issuing verdicts on new code proposals before they are even built.
+- **Hardware-Native Performance**: Optimized for **Apple Silicon (M5)**, utilizing unified memory bandwidth and neural accelerators for real-time safety proofs.
 
 ---
 
-## ⚡ Hardware & Tactical Runtime
+## 🛠️ The Technology Stack
 
-Built specifically for the **Silicon-Class M5 Substrate**, utilizing every cycle of the ARM64 Darwin kernel.
-
-- **Processor**: Apple M5 Pro / M5 Max.
-- **Neural Interconnect**: Native **Neural Accelerator** integration in every GPU core for ultra-low latency inference.
-- **Memory Substrate**: 307–600+ GB/s unified memory bandwidth, ensuring zero-bottleneck data flow between the Go Root Spine and the Rust Safety Rail.
-- **Containerization**: **Wasmtime** Layer 3/4 isolation, providing a "cold-vacuum" execution environment for verified artifacts.
+| Layer | Technology | Role |
+|:---|:---|:---|
+| **Orchestration** | `Go` | High-concurrency Root Spine and gRPC control plane. |
+| **Verification** | `Rust + Z3 SMT` | Formal mathematical proofs for every code change. |
+| **Sandboxing** | `Wasmtime` | "Cold-vacuum" execution environment for unverified code. |
+| **Audit** | `Merkle Log` | RFC-6962 compliant, tamper-proof event history. |
+| **Observability** | `OpenTelemetry` | Real-time global fitness monitoring. |
 
 ---
 
-## 🏗️ The 6-Phase Strategic Roadmap
+## ⚡ Hardware Mandate
+This substrate is purpose-built for **Apple M5 Series** hardware:
+- **Unified Memory**: 300+ GB/s bandwidth for zero-copy safety analysis.
+- **Neural Interconnect**: Native accelerator integration for low-latency inference.
+
+---
+
+## 📜 Strategic Roadmap
 
 | Phase | Designation | Status | Objective |
 |:---:|:---|:---:|:---|
-| **01** | **Observability Substrate** | **COMPLETE** | High-density OTel instrumentation & Merkle-log audit trail. |
-| **02** | **Safety Rail Tier 1** | **COMPLETE** | Z3 SMT constraint verification & Wasmtime sandboxing. |
-| **03** | **Root Spine Skeleton** | **COMPLETE** | Go-based gRPC control plane & MCP Host integration. |
-| **04** | **Translucent Gate UI** | **COMPLETE** | Tactical human-in-the-loop decision portal. |
-| **05** | **Synthetic Analyst Factory** | *PENDING* | Reference implementation for cross-domain agent factories. |
-| **06** | **Dhamma-Adviser** | *PENDING* | Bilara-grounded ethical scoring & evidence production. |
+| **01** | **Audit Substrate** | **COMPLETE** | Merkle-log audit trail & instrumentation. |
+| **02** | **Safety Rail** | **COMPLETE** | Z3 constraint verification & sandboxing. |
+| **03** | **Root Spine** | **COMPLETE** | Central gRPC orchestration engine. |
+| **04** | **Translucent Gate** | **COMPLETE** | Tactical human-in-the-loop decision portal. |
+| **05** | **Analyst Factory** | **ACTIVE** | Reference autonomous analyst agent implementation. |
+| **06** | **Ethical Adviser** | *PENDING* | Bilara-grounded ethical weighting of actions. |
 
 ---
 
-## 🛠️ Technology Manifest
+## ⚖️ Legal & Licensing
 
-- **Core Logic**: `Go` (Root Spine, kqueue event loop).
-- **Formal Methods**: `Rust` (Safety Rail, Z3 SMT).
-- **Audit Integrity**: `Merkle Tree` (RFC 6962 compliant).
-- **Telemetry**: `OpenTelemetry` (Typed JSON schemas).
-- **Architecture**: `Self-Optimizing` (ActionProposal → SafetyVerdict → DeltaEval).
+Licensed under the **Apache License 2.0**.
+- **Liability**: Explicitly disclaims warranties for high-agency environments.
+- **Permissions**: Full rights to modify, distribute, and evolve the substrate.
 
----
-
-## 📜 Legal & Liability
-
-This industrial-grade substrate is licensed under the **Apache License 2.0**. 
-- **Liability Disclaimer**: Explicitly disclaims all warranties and limits liability for use in high-agency environments.
-- **Permissions**: Grants perpetual, worldwide rights to modify and distribute the assembly.
-
-See [LICENSE](LICENSE) for the full governing text.
+See [LICENSE](LICENSE) for details.
 
 ---
-
 *Part of the [AntiGravity](https://chromewebstore.google.com/detail/antigravity-browser-exten/eeijfnjmjelapieobjiielcpmhhchbkg) station infrastructure.*
