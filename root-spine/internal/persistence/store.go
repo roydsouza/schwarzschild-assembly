@@ -49,14 +49,42 @@ func (s *Store) Close() {
 	s.pool.Close()
 }
 
-// Factory represents a registered factory.
-type Factory struct {
+// SpecDocument represents a service specification.
+type SpecDocument struct {
 	ID              uuid.UUID
-	Name            string
-	Type            string
-	ConfigJSON      []byte
-	State           string
-	LastHeartbeatAt *time.Time
+	ServiceName     string
+	Description     string
+	PrimaryLanguage string
+	IsFinalized     bool
+	ApprovedAt      *time.Time
+	DataJSON             []byte
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	DeploymentTarget     string
+	DeploymentConfigJSON []byte
+}
+
+// AssemblyLine represents a service creation instance.
+type AssemblyLine struct {
+	ID           uuid.UUID
+	SpecID       uuid.UUID
+	ServiceName  string
+	CurrentState string
+	Justification string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	LastPulseAt  *time.Time
+}
+
+// MerkleLeaf represents a single entry in the audit log.
+type MerkleLeaf struct {
+	Index                  int64
+	ProposalID             uuid.UUID
+	LeafHashHex            string
+	EventType              string
+	PolicyFingerprintHex   string
+	MerkleRootHex          string
+	CreatedAt              time.Time
 }
 
 // GetOrCreateFactory returns a factory by name, creating it if it doesn't exist.
@@ -142,6 +170,27 @@ func (s *Store) GetMerkleLeaves(ctx context.Context) ([]string, error) {
 	return leaves, nil
 }
 
+// GetMerkleLeavesForProposal retrieves all leaves associated with a specific proposal ID.
+func (s *Store) GetMerkleLeavesForProposal(ctx context.Context, pID uuid.UUID) ([]MerkleLeaf, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT leaf_index, proposal_id, leaf_hash_hex, event_type, policy_fingerprint_hex, merkle_root_hex, created_at
+		FROM merkle_leaves WHERE proposal_id = $1 ORDER BY leaf_index ASC`, pID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query leaves for proposal: %w", err)
+	}
+	defer rows.Close()
+
+	var leaves []MerkleLeaf
+	for rows.Next() {
+		var l MerkleLeaf
+		if err := rows.Scan(&l.Index, &l.ProposalID, &l.LeafHashHex, &l.EventType, &l.PolicyFingerprintHex, &l.MerkleRootHex, &l.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan leaf: %w", err)
+		}
+		leaves = append(leaves, l)
+	}
+	return leaves, nil
+}
+
 // IsProposalSecurityAdjacent checks whether a proposal is security-adjacent.
 // Used by the MCP host to block approve_action on security-adjacent proposals.
 func (s *Store) IsProposalSecurityAdjacent(ctx context.Context, proposalID uuid.UUID) (bool, error) {
@@ -196,6 +245,121 @@ func (s *Store) SaveFitnessSnapshot(ctx context.Context, schemaVersion string, t
 	}
 	return nil
 }
+// SaveSpecDocument persists or updates a service specification.
+func (s *Store) SaveSpecDocument(ctx context.Context, spec SpecDocument) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO spec_documents (id, service_name, description, primary_language, is_finalized, approved_at, data_json, deployment_target, deployment_config_json, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		ON CONFLICT (service_name) DO UPDATE SET 
+			description = EXCLUDED.description,
+			primary_language = EXCLUDED.primary_language,
+			is_finalized = EXCLUDED.is_finalized,
+			approved_at = EXCLUDED.approved_at,
+			data_json = EXCLUDED.data_json,
+			deployment_target = EXCLUDED.deployment_target,
+			deployment_config_json = EXCLUDED.deployment_config_json,
+			updated_at = NOW()`,
+		spec.ID, spec.ServiceName, spec.Description, spec.PrimaryLanguage, spec.IsFinalized, spec.ApprovedAt, spec.DataJSON, spec.DeploymentTarget, spec.DeploymentConfigJSON)
+	if err != nil {
+		return fmt.Errorf("failed to save spec document: %w", err)
+	}
+	return nil
+}
+
+// GetSpecDocument retrieves a spec by service name.
+func (s *Store) GetSpecDocument(ctx context.Context, serviceName string) (SpecDocument, error) {
+	var spec SpecDocument
+	err := s.pool.QueryRow(ctx, `
+		SELECT id, service_name, description, primary_language, is_finalized, approved_at, data_json, created_at, updated_at, deployment_target, deployment_config_json
+		FROM spec_documents WHERE service_name = $1`, serviceName).Scan(
+		&spec.ID, &spec.ServiceName, &spec.Description, &spec.PrimaryLanguage, &spec.IsFinalized, &spec.ApprovedAt, &spec.DataJSON, &spec.CreatedAt, &spec.UpdatedAt, &spec.DeploymentTarget, &spec.DeploymentConfigJSON)
+	if err != nil {
+		return SpecDocument{}, fmt.Errorf("failed to get spec document: %w", err)
+	}
+	return spec, nil
+}
+
+// UpdateSpecDeploymentTarget updates the deployment target fields for a spec.
+func (s *Store) UpdateSpecDeploymentTarget(ctx context.Context, id uuid.UUID, target string, config []byte) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE spec_documents 
+		SET deployment_target = $1, deployment_config_json = $2, updated_at = NOW()
+		WHERE id = $3`,
+		target, config, id)
+	if err != nil {
+		return fmt.Errorf("failed to update spec deployment target: %w", err)
+	}
+	return nil
+}
+
+// CreateAssemblyLine initiates a new lifecycle tracker.
+func (s *Store) CreateAssemblyLine(ctx context.Context, al AssemblyLine) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO assembly_lines (id, spec_id, service_name, current_state, justification)
+		VALUES ($1, $2, $3, $4, $5)`,
+		al.ID, al.SpecID, al.ServiceName, al.CurrentState, al.Justification)
+	if err != nil {
+		return fmt.Errorf("failed to create assembly line: %w", err)
+	}
+	return nil
+}
+
+// UpdateAssemblyLineState transitions the lifecycle phase and returns the PREVIOUS state.
+func (s *Store) UpdateAssemblyLineState(ctx context.Context, id uuid.UUID, newState, justification string) (string, error) {
+	var prevState string
+	err := s.pool.QueryRow(ctx, `
+		UPDATE assembly_lines 
+		SET current_state = $1, justification = $2, updated_at = NOW()
+		WHERE id = $3
+		RETURNING (SELECT current_state FROM assembly_lines WHERE id = $3)`, // This logic is tricky for a single query due to update visibility.
+		// Actually, standard PG 'RETURNING current_state' returns the NEW state.
+		// We need to fetch the old one first OR use a more complex query.
+		newState, justification, id).Scan(&prevState)
+	
+	// Correction: RETURNING in PG returns the row *after* the update logic but *before* visibility? No, it's the new row.
+	// Let's use a simpler two-step approach in a transaction if needed, but for safety-critical logic, 
+	// I'll use: UPDATE ... RETURNING (SELECT current_state FROM old_table ...)
+	
+	// Refined SQL for atomic Swap & Return Old:
+	err = s.pool.QueryRow(ctx, `
+		WITH old_state AS (
+			SELECT current_state FROM assembly_lines WHERE id = $1 FOR UPDATE
+		)
+		UPDATE assembly_lines 
+		SET current_state = $2, justification = $3, updated_at = NOW()
+		WHERE id = $1
+		RETURNING (SELECT current_state FROM old_state)`,
+		id, newState, justification).Scan(&prevState)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to update assembly line state: %w", err)
+	}
+	return prevState, nil
+}
+
+// GetAssemblyLine retrieves an assembly line by ID.
+func (s *Store) GetAssemblyLine(ctx context.Context, id uuid.UUID) (AssemblyLine, error) {
+	var al AssemblyLine
+	err := s.pool.QueryRow(ctx, `
+		SELECT id, spec_id, service_name, current_state, justification, created_at, updated_at, last_pulse_at
+		FROM assembly_lines WHERE id = $1`, id).Scan(
+		&al.ID, &al.SpecID, &al.ServiceName, &al.CurrentState, &al.Justification, &al.CreatedAt, &al.UpdatedAt, &al.LastPulseAt)
+	if err != nil {
+		return AssemblyLine{}, fmt.Errorf("failed to get assembly line: %w", err)
+	}
+	return al, nil
+}
+
+// Factory represents a registered factory.
+type Factory struct {
+	ID              uuid.UUID
+	Name            string
+	Type            string
+	ConfigJSON      []byte
+	State           string
+	LastHeartbeatAt *time.Time
+}
+
 // ApplyMigrations runs any pending SQL migrations in the specified directory.
 func (s *Store) ApplyMigrations(ctx context.Context, migrationsDir string) error {
 	// 1. Create migrations tracking table

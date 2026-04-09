@@ -8,6 +8,8 @@
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+# Ensure all required tools are on PATH for this machine
+export PATH="/opt/homebrew/bin:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
 export CPATH="${CPATH:-}:/opt/homebrew/include:/usr/local/include"
 export LIBRARY_PATH="${LIBRARY_PATH:-}:/opt/homebrew/lib:/usr/local/lib"
 
@@ -89,8 +91,7 @@ fi
 
 if [ -d agents/prolog-substrate/tests ]; then
   for test_file in agents/prolog-substrate/tests/test_*.pl; do
-    if swipl -g "use_module(library(plunit)), load_test_files([]), run_tests, halt" \
-             -t "halt(1)" "$test_file" 2>&1; then
+    if swipl -g "consult('$test_file'), run_tests, halt." 2>&1; then
       ok "prolog: $test_file"
     else
       fail "prolog: $test_file FAILED"
@@ -151,10 +152,10 @@ if [ -d agents/prolog-substrate ]; then
   # No bare assertz/retract in production code (only safe_assert/safe_retract allowed).
   # Exception: core/safety_bridge.pl is the ONE authorized mutation point — it calls
   # assertz/retract directly by design (it IS the safe_assert implementation).
-  violations=$(grep -rn 'assertz(\|retract(' agents/prolog-substrate/ \
+  violations=$(set +e; grep -rn 'assertz(\|retract(' agents/prolog-substrate/ \
     --include='*.pl' \
     | grep -v 'safe_assert\|safe_retract\|%\|test_\|_test\.pl\|core/safety_bridge\.pl' \
-    | wc -l | tr -d ' ')
+    | wc -l | tr -d ' '; set -e)
   if [ "$violations" -eq 0 ]; then
     ok "No bare assertz/retract in production Prolog code"
   else

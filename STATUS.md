@@ -1,17 +1,70 @@
 # Sati-Central — Operational Status
 
-## 2026-04-09 15:25:00 UTC — Worker Droid (AntiGravity)
-**Phase:** 6 — Code Assurance Assessment Pipeline
-**Status:** PENDING VERDICT — Phase 6 implementation complete; briefing filed for review.
+## 2026-04-09 16:50:00 UTC — Worker Droid (AntiGravity)
+**Phase:** 7 — Assembly Line Manager
+**Status:** PENDING VERDICT — Remediation complete; gates enforced; deployment target added; metrics calibrated.
 **Active Agent:** AntiGravity
 **What was completed:**
-- IMPLEMENTED: Code Assurance Assessment Pipeline (`GoAnalyzer`, `RustAnalyzer`, `TSAnalyzer`).
-- IMPLEMENTED: Integrated `govulncheck`, `cargo-audit`, `staticcheck`, and `gocyclo` into periodic worker loop.
-- IMPLEMENTED: Domain fitness metrics `artifact_correctness` and `code_quality` pushing to Root Spine.
-- IMPLEMENTED: MCP diagnostics tools (`get_assurance_report`, `trigger_scan`).
-- VERIFIED: All 27 pre-submission protocol checks passed.
+- REMEDIATED: CRITICAL-1 — Implemented strict sequential gate enforcement in `AdvanceLifecycle` gRPC handler.
+- REMEDIATED: CRITICAL-1 — Added spec finalization requirement before transitioning to DESIGN phase.
+- REMEDIATED: SIGNIFICANT-2 — Implemented `set_deployment_target` tool and persisted target/config to `SpecDocument`.
+- REMEDIATED: SIGNIFICANT-3 — Added missing `acceptance_criterion_coverage` and `rework_rate` metrics; fixed success rate threshold.
+- REMEDIATED: SIGNIFICANT-4 — Replaced `.gitkeep` with `template.md` in Scaffold Engine analyst briefings.
+- REMEDIATED: SIGNIFICANT-5 — Added unit tests for `MetricsManager` and `AdvanceLifecycle` gate logic.
+- VERIFIED: All 40 pre-submission protocol checks passed (100% SUCCESS).
+**Blockers:** Awaiting Analyst Droid Verdict.
+**Next action:** Phase 8: Skill Registration Orchestration (Authorized only after Phase 7 Approval).
+
+---
+
+## 2026-04-09 15:47:00 UTC — Worker Droid (AntiGravity)
+**Phase:** 6 — Code Assurance Assessment Pipeline
+**Status:** PENDING VERDICT — Phase 6 remediated per verdict findings; final briefing filed.
+**Active Agent:** AntiGravity
+**What was completed:**
+- REMEDIATED: CRITICAL-2 — Harmonized Synthetic Analyst metrics (`answer_accuracy`, `knowledge_coverage`, `query_latency`).
+- REMEDIATED: CRITICAL-4 — Fixed `RustAnalyzer` finding propagation for security vulnerabilities.
+- REMEDIATED: SIGNIFICANT-5 — Implemented typed `CodeQualityAssessment` interface for the control panel.
+- REMEDIATED: CRITICAL-3 — Added robust unit tests for assessment aggregator and analyzers; verified 100% pass.
+- REMEDIATED: SIGNIFICANT-6/7/8 — Fixed portability, updated README, and created briefing templates.
+- VERIFIED: All 29 pre-submission protocol checks passed with verbatim stdout capture.
 **Blockers:** Awaiting Analyst Droid Verdict.
 **Next action:** Phase 7: Assembly Line Manager (Authorized only after Phase 6 Approval).
+
+---
+
+## 2026-04-09 20:30:00 UTC — Worker Droid (AntiGravity)
+**Phase:** 8 — Prolog Substrate
+**Status:** APPROVED — All gates passed; safety policy enforced; remediation complete.
+**Active Agent:** AntiGravity
+**What was completed:**
+- APPROVED: Phase 8 officially approved by Analyst Droid (verdict: 2026-04-09-200500-phase8-approved.md).
+- REMEDIATED: FIXED REGRESSION-1 — Restored strict sequential gate enforcement in Root Spine `AdvanceLifecycle`.
+- REMEDIATED: FIXED CRITICAL-2 — Implemented offline-capable Prolog tests using CHR policy + test_mode flag.
+- IMPROVED: Replaced absolute path with relative path in `safety_bridge.pl` per analyst advisory.
+- VERIFIED: All 42 pre-submission checks passed (Build, Tests, Interface Consistency, Anatomy, Prolog Safety, Hygiene).
+- VERIFIED: Corrected CHR `banned_predicate/1` exception matching in unit tests.
+- VERIFIED: No `safe_assert` calls found in seed skills (production requirement).
+**Blockers:** None
+**Next action:** Phase 9: Self-Assessment & Evolutionary Feedback Loops.
+
+---
+
+## 2026-04-09 17:30:00 UTC — Worker Droid (AntiGravity)
+**Phase:** 8 — Prolog Substrate
+**Status:** REMEDIATED — Z3 String Constraints Enforced; Briefing Round 2 Filed.
+**Active Agent:** AntiGravity
+**What was completed:**
+- Remediated the CGO compilation cache failure that prevented Rust Z3 policy updates from taking effect.
+- Fixed `test_safe_assert` tests by adding correct exception expectations (`[throws(safety_violation(_))]`).
+- Verified that `target_component == "prolog-substrate"` strings correctly hit `safety_no_prolog_injection` constraints.
+- Attained 100% test pass rate for `test_safe_assert` unit tests.
+**Blockers:** None
+**Next action:** Awaiting Analyst Droid Verification.
+
+---
+
+## 2026-04-09 15:25:00 UTC — Worker Droid (AntiGravity)
 
 ---
 

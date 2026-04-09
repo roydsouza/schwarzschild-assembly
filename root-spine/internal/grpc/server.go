@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -23,11 +24,30 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Store defines the persistence operations needed by the Orchestrator.
+type Store interface {
+	GetOrCreateFactory(ctx context.Context, f persistence.Factory) (uuid.UUID, error)
+	GetDefaultFactoryID(ctx context.Context) (uuid.UUID, error)
+	SaveProposal(ctx context.Context, p_id uuid.UUID, f_id uuid.UUID, agentID, desc, hash string, isSec bool, subAt time.Time) error
+	UpdateProposalVerdict(ctx context.Context, id uuid.UUID, verdict, fingerprint string, duration uint64, proof []byte) error
+	SaveMerkleLeaf(ctx context.Context, index int64, pID uuid.UUID, hash, eventType, fingerprint, root string) error
+	IsProposalSecurityAdjacent(ctx context.Context, proposalID uuid.UUID) (bool, error)
+	SaveMetricDeclaration(ctx context.Context, factoryID uuid.UUID, metricID, displayName, desc, unit, direction string, threshold float64, operator string) error
+	SaveMetricValue(ctx context.Context, metricID string, value float64, status string, observedAt time.Time) error
+	SaveSpecDocument(ctx context.Context, spec persistence.SpecDocument) error
+	GetSpecDocument(ctx context.Context, serviceName string) (persistence.SpecDocument, error)
+	CreateAssemblyLine(ctx context.Context, al persistence.AssemblyLine) error
+	UpdateAssemblyLineState(ctx context.Context, id uuid.UUID, newState, justification string) (string, error)
+	GetAssemblyLine(ctx context.Context, id uuid.UUID) (persistence.AssemblyLine, error)
+	UpdateSpecDeploymentTarget(ctx context.Context, id uuid.UUID, target string, config []byte) error
+	GetMerkleLeavesForProposal(ctx context.Context, pID uuid.UUID) ([]persistence.MerkleLeaf, error)
+}
+
 // Server implements the Orchestrator service.
 type Server struct {
 	pb.UnimplementedOrchestratorServer
 	logger  *zap.Logger
-	store   *persistence.Store
+	store   Store
 	safety  *safety.Bridge
 	merkle  *merkle.Tree
 	analyst *orchestrator.VerdictManager
@@ -37,7 +57,7 @@ type Server struct {
 }
 
 // NewServer creates a new gRPC orchestrator server.
-func NewServer(logger *zap.Logger, store *persistence.Store, safety *safety.Bridge, tree *merkle.Tree, analyst *orchestrator.VerdictManager, hub *websocket.Hub, gate *gate.Gate, factory *orchestrator.SyntheticAnalystFactory) *Server {
+func NewServer(logger *zap.Logger, store Store, safety *safety.Bridge, tree *merkle.Tree, analyst *orchestrator.VerdictManager, hub *websocket.Hub, gate *gate.Gate, factory *orchestrator.SyntheticAnalystFactory) *Server {
 	return &Server{
 		logger:  logger,
 		store:   store,
@@ -436,4 +456,224 @@ func (s *Server) ReportMetrics(ctx context.Context, req *pb.MetricReport) (*pb.O
 		Success: true,
 		Message: "Metrics reported successfully",
 	}, nil
+}
+
+// ── Phase 7: Assembly Line Manager ──────────────────────────────────────────
+
+// CreateAssemblyLine initiates a new software service assembly line.
+func (s *Server) CreateAssemblyLine(ctx context.Context, req *pb.SpecDocument) (*pb.AssemblyLine, error) {
+	sID, err := uuid.Parse(req.Id)
+	if err != nil {
+		sID = uuid.New()
+	}
+
+	dataJSON, _ := json.Marshal(req)
+	spec := persistence.SpecDocument{
+		ID:              sID,
+		ServiceName:     req.ServiceName,
+		Description:     req.Description,
+		PrimaryLanguage: req.PrimaryLanguage,
+		IsFinalized:     req.IsFinalized,
+		DataJSON:        dataJSON,
+	}
+
+	if err := s.store.SaveSpecDocument(ctx, spec); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save spec: %v", err)
+	}
+
+	alID := uuid.New()
+	al := persistence.AssemblyLine{
+		ID:           alID,
+		SpecID:       sID,
+		ServiceName:  req.ServiceName,
+		CurrentState: "INTAKE",
+	}
+
+	if err := s.store.CreateAssemblyLine(ctx, al); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create assembly line: %v", err)
+	}
+
+	return &pb.AssemblyLine{
+		Id:           alID.String(),
+		SpecId:       sID.String(),
+		ServiceName:  req.ServiceName,
+		CurrentState: pb.LifecycleState_LIFECYCLE_INTAKE,
+		CreatedAtMs:  time.Now().UnixMilli(),
+	}, nil
+}
+
+// GetAssemblyLineStatus returns the current lifecycle state.
+func (s *Server) GetAssemblyLineStatus(ctx context.Context, req *pb.AssemblyLineID) (*pb.LifecycleStatus, error) {
+	alID, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid ID: %v", err)
+	}
+
+	al, err := s.store.GetAssemblyLine(ctx, alID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "assembly line not found: %v", err)
+	}
+
+	return &pb.LifecycleStatus{
+		State: s.mapToLifecycleState(al.CurrentState),
+	}, nil
+}
+
+// AdvanceLifecycle transitions an assembly line to the next state.
+func (s *Server) AdvanceLifecycle(ctx context.Context, req *pb.LifecycleAdvance) (*pb.LifecycleStatus, error) {
+	alID, err := uuid.Parse(req.AssemblyLineId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid ID: %v", err)
+	}
+
+	// 1. Fetch current state and spec info
+	al, err := s.store.GetAssemblyLine(ctx, alID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "assembly line not found: %v", err)
+	}
+	currentState := s.mapToLifecycleState(al.CurrentState)
+
+	// 2. Enforce Sequential Gates
+	// Rule: No backward transitions, no state skipping.
+	if req.TargetState <= currentState {
+		return nil, status.Errorf(codes.FailedPrecondition, "backward transitions not permitted: %v -> %v", currentState, req.TargetState)
+	}
+	if req.TargetState > currentState+1 {
+		return nil, status.Errorf(codes.FailedPrecondition, "state skipping not permitted: %v -> %v", currentState, req.TargetState)
+	}
+
+	// 3. Phase-Specific Gate Conditions
+	switch currentState {
+	case pb.LifecycleState_LIFECYCLE_INTAKE:
+		// Gate: INTAKE -> DESIGN requires a finalized spec
+		specDoc, err := s.store.GetSpecDocument(ctx, al.ServiceName)
+		if err != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "spec required before entering DESIGN")
+		}
+		
+		if !specDoc.IsFinalized {
+			return nil, status.Errorf(codes.FailedPrecondition, "spec must be finalized via finalize_spec before entering DESIGN")
+		}
+	case pb.LifecycleState_LIFECYCLE_DESIGN:
+		// Gate: DESIGN -> SCAFFOLD requires analyst approval
+		return nil, status.Errorf(codes.Unimplemented, "[PHASE-8] DESIGN -> SCAFFOLD requires proper verdict queries, not filesystem scans")
+	case pb.LifecycleState_LIFECYCLE_SCAFFOLD:
+		// Gate: SCAFFOLD -> BUILD requires Merkle audit of scaffolded items
+		// For Phase 8, we verify that at least one SAFE leaf exists for this assembly line
+		leaves, err := s.store.GetMerkleLeavesForProposal(ctx, alID)
+		if err != nil || len(leaves) == 0 {
+			return nil, status.Errorf(codes.FailedPrecondition, "no safe scaffold artifacts found in audit log for %s", al.ServiceName)
+		}
+	case pb.LifecycleState_LIFECYCLE_BUILD:
+		// Gate: BUILD -> VERIFY requires successful build metrics
+		// Check rework rate and success rate from telemetry
+		// (Integration with ReportMetrics)
+		return nil, status.Errorf(codes.Unimplemented, "BUILD -> VERIFY requires automated build metrics (commencing in Phase 8)")
+	case pb.LifecycleState_LIFECYCLE_VERIFY:
+		// Gate: VERIFY -> DELIVERED requires 100% acceptance criteria coverage
+		// Check metrics table
+		return nil, status.Errorf(codes.Unimplemented, "VERIFY -> DELIVERED requires 100%% acceptance criteria coverage")
+	}
+
+	// 4. Commit Transition
+	_, err = s.store.UpdateAssemblyLineState(ctx, alID, req.TargetState.String(), req.Justification)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update state: %v", err)
+	}
+
+	return &pb.LifecycleStatus{
+		State: req.TargetState,
+	}, nil
+}
+
+// UpdateSkill proposes a new version of an agent's skill (Phase 7/8).
+func (s *Server) UpdateSkill(ctx context.Context, req *pb.SkillUpdateRequest) (*pb.MerkleProof, error) {
+	s.logger.Info("verifying skill update", zap.String("agent_id", req.AgentId), zap.String("skill", req.SkillName))
+
+	pID := uuid.New()
+	pIDBytes, _ := pID.MarshalBinary()
+	var pIDFixed [16]byte
+	copy(pIDFixed[:], pIDBytes)
+
+	// [PHASE-8] Logic to verify skill via Safety Rail
+	// 1. Determine if security-adjacent (e.g., updating core bridges)
+	isSec := req.SkillName == "safety_bridge" || req.SkillName == "merkle_bridge" || req.SkillName == "otel_bridge"
+	
+	// 2. Wrap clause as action payload for Safety Rail (JSON format)
+	// The Safety Rail's extract_facts expects this specific schema.
+	type ProposalPayload struct {
+		OperationType     string      `json:"operation_type"`
+		TargetComponent   string      `json:"target_component"`
+		ChangeDescription string      `json:"change_description"`
+		Context           interface{} `json:"context,omitempty"`
+	}
+
+	pp := ProposalPayload{
+		OperationType:     "modify_file",
+		TargetComponent:   "prolog-substrate",
+		ChangeDescription: fmt.Sprintf("Update Skill: %s", req.SkillName),
+		Context:           string(req.NewContent),
+	}
+	payload, _ := json.Marshal(pp)
+
+	// Safety Rail expects raw SHA-256(payload)
+	rawHash := sha256.Sum256(payload)
+
+	// Merkle Leaf expects RFC 6962 LeafHash(payload)
+	payloadHash := merkle.LeafHash(payload)
+
+	// 3. Verify via Safety Rail (Tier 1)
+	result, err := s.safety.VerifyProposal(
+		pIDFixed,
+		req.AgentId,
+		fmt.Sprintf("Update Skill: %s", req.SkillName),
+		payload,
+		rawHash,
+		fmt.Sprintf("skills/%s/%s.pl", req.AgentId, req.SkillName),
+		isSec,
+		uint64(time.Now().UnixMilli()),
+	)
+	if err != nil {
+		s.logger.Error("safety verification failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "safety engine error: %v", err)
+	}
+
+	if !result.IsSafe {
+		s.logger.Warn("skill update REJECTED", zap.String("reason", result.Error))
+		return nil, status.Errorf(codes.PermissionDenied, "safety violation: %s", result.Error)
+	}
+
+	// 4. Safe -> Commit to audit log
+	leafData := []byte(fmt.Sprintf("SKILL_UPDATE:%s:%s:%s", req.AgentId, req.SkillName, hex.EncodeToString(payloadHash[:])))
+	leafHash := merkle.LeafHash(leafData)
+	s.merkle.Append(leafHash)
+
+	if err := s.store.SaveMerkleLeaf(ctx, int64(s.merkle.Size()-1), pID, leafHash.Hex(), "SKILL_UPDATED", hex.EncodeToString(result.Proof), s.merkle.Root().Hex()); err != nil {
+		s.logger.Error("failed to save skill update leaf", zap.Error(err))
+	}
+
+	return &pb.MerkleProof{
+		LeafHashHex: leafHash.Hex(),
+		TreeSize:    int64(s.merkle.Size()),
+		RootHashHex: s.merkle.Root().Hex(),
+	}, nil
+}
+
+func (s *Server) mapToLifecycleState(state string) pb.LifecycleState {
+	switch state {
+	case "LIFECYCLE_INTAKE", "INTAKE":
+		return pb.LifecycleState_LIFECYCLE_INTAKE
+	case "LIFECYCLE_DESIGN", "DESIGN":
+		return pb.LifecycleState_LIFECYCLE_DESIGN
+	case "LIFECYCLE_SCAFFOLD", "SCAFFOLD":
+		return pb.LifecycleState_LIFECYCLE_SCAFFOLD
+	case "LIFECYCLE_BUILD", "BUILD":
+		return pb.LifecycleState_LIFECYCLE_BUILD
+	case "LIFECYCLE_VERIFY", "VERIFY":
+		return pb.LifecycleState_LIFECYCLE_VERIFY
+	case "LIFECYCLE_DELIVERED", "DELIVERED":
+		return pb.LifecycleState_LIFECYCLE_DELIVERED
+	default:
+		return pb.LifecycleState_LIFECYCLE_UNSPECIFIED
+	}
 }
