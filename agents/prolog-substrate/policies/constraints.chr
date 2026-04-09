@@ -10,22 +10,21 @@
  * Every proposed clause is run through these rules before assertion.
  */
 
-:- chr_constraint check_constraints/1, banned_predicate/1, complexity_limit/1.
+:- chr_constraint check_constraints/1, banned_predicate/1, complexity_limit/1, head_is_meta/1.
 
 % Rule: Ban direct KB mutation predicates
 check_constraints(Clause) <=> find_banned(Clause).
 
 % Recursive search for banned predicates in the body of a clause
-find_banned((_ :- Body)) :- !, find_banned(Body).
+find_banned((_Head :- Body)) :- !, find_banned(Body).
 find_banned((A, B)) :- !, find_banned(A), find_banned(B).
 find_banned((A ; B)) :- !, find_banned(A), find_banned(B).
 find_banned(not(A)) :- !, find_banned(A).
 find_banned(\+ A) :- !, find_banned(A).
 find_banned(Goal) :-
-    functor(Goal, Name, _),
-    is_banned(Name)
-    -> banned_predicate(Name)
-    ;  true.
+    (atom(Goal) -> Name = Goal ; functor(Goal, Name, _)),
+    (is_banned(Name) -> banned_predicate(Name) ; true),
+    (is_meta(Name) -> head_is_meta(Name) ; true).
 
 % Policy: These predicates are strictly forbidden in skills
 is_banned(assert).
@@ -37,7 +36,20 @@ is_banned(abolish).
 is_banned(shell).
 is_banned(process_create).
 
+is_meta(inspect_predicate).
+is_meta(test_predicate).
+is_meta(measure_performance).
+is_meta(check_invariants).
+is_meta(propose_improvement).
+is_meta(improve_if_slow).
+
 % Handle the constraints
 banned_predicate(Name) <=> 
     format(atom(Msg), 'Use of banned predicate: ~w. Direct KB mutation or shell access is forbidden.', [Name]),
+    throw(safety_violation(Msg)).
+
+% Phase 9: Self-Assessment Hardening
+% Prevent autonomous agents from redefining the meta-improvement logic itself.
+head_is_meta(Name) <=>
+    format(atom(Msg), 'Redefinition of meta-improvement logic prohibited: ~w.', [Name]),
     throw(safety_violation(Msg)).
