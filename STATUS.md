@@ -1,5 +1,144 @@
 # Sati-Central — Operational Status
 
+## 2026-04-09 07:00:00 UTC — Analyst Droid (Claude Code)
+**Phase:** HANDOFF — Phase 6 pre-conditions + Phases 7/8 spec complete
+**Status:** HANDED OFF TO ANTIGRAVITY — all amendments applied, pre-submit.sh mandatory
+**Changes applied this session:**
+- Phase 8 added: Prolog Self-Enhancement Framework (safe_assert/1, CHR policy, pengines sandbox)
+- Anti-Slop Rule 9 added to §8: "COMPLETE" only when pre-submit.sh checklist passes
+- §9 updated: SWI-Prolog 9.x and Haskell/GHCup added to hardware/runtime context
+- §10 NEW: AntiGravity Pre-Submission Protocol (mandatory pre-submit.sh before every briefing)
+- scripts/pre-submit.sh: 7-section verification script (build, tests, interface consistency, anatomy, prolog safety, hygiene, briefing path)
+- scripts/bootstrap.sh: SWI-Prolog (brew) and Haskell/GHCup installation added
+- Language table extended: Prolog (SWI-Prolog), Haskell added alongside Go/Rust/Python/TypeScript
+- Amendment: proposals/claude-md-amendments/2026-04-09-process-hardening-prolog-phase8.md
+**Handoff target:** AntiGravity (Gemini) — read SYNC_LOG.md YAML frontmatter for next action
+
+---
+
+## 2026-04-09 06:00:00 UTC — Analyst Droid (Claude Code)
+**Phase:** Amendment — Phase 7 Assembly Line Manager
+**Status:** AMENDMENT APPLIED — Phase 7 spec written into CLAUDE.md
+**Changes applied:**
+- Phase 7 added: Assembly Line Manager (INTAKE→DESIGN→SCAFFOLD→BUILD→VERIFY→DELIVERED)
+- Requirements Advisor MCP tools spec'd (6 tools on existing :8082 host)
+- Scaffold Engine factory added to project structure + domain fitness metrics
+- assembly-lines/ directory added to canonical structure
+- Proto: CreateAssemblyLine, GetAssemblyLineStatus, AdvanceLifecycle, UpdateSkill RPCs added
+- Self-modification: Option A (UpdateSkill) + Option B (SubmitProposal pipeline); Option C prohibited
+- safety_no_direct_source_write constraint added to Safety Rail policy set
+- Language selection rules codified (Go/Rust/Python/TypeScript)
+- INTAKE→DESIGN gate: Roy approves draft spec; Analyst Droid reviews Roy's spec, not its own draft
+- Amendment: proposals/claude-md-amendments/2026-04-09-phase7-assembly-line-manager.md
+
+---
+
+## 2026-04-09 05:30:00 UTC — Analyst Droid (Claude Code)
+**Phase:** Amendment — CLAUDE.md §6 Scope Change
+**Status:** AMENDMENT APPLIED — Dhamma-Adviser dropped; Phase 6 → Code Assurance Factory
+**Changes applied:**
+- Phase 6 redefined: Dhamma-Adviser → Code Assurance Factory (lint, complexity, CVE, coverage)
+- Fitness vector v2.0.0: dhamma_alignment removed; artifact_correctness (0.25) + code_quality (0.15) added
+- ReportMetrics RPC added to proto spec
+- DhammaReflection component → CodeQualityPanel
+- Merkle leaf schema v1.1.0: dhamma_ref removed, quality_cert added
+- Synthetic Analyst domain metrics: pali_filter_rate → answer_accuracy
+- Amendment proposal: proposals/claude-md-amendments/2026-04-09-drop-dhamma-adviser.md
+**Files changed:** CLAUDE.md, observability/fitness-vector-schema.json, SYNC_LOG.md
+
+---
+
+## 2026-04-09 05:00:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 5 — APPROVED
+**Status:** PHASE 5 COMPLETE — Phase 6 authorized with pre-conditions
+**What was completed:**
+- Full factory anatomy: mcp-server/, worker/, domain-fitness/, analyst-briefing/, README.md ✓
+- 5 domain metrics with correct thresholds registered on startup ✓
+- Binary removed + gitignored ✓
+- NOTE: changes landed without briefing (process violation — use template going forward)
+**Phase 6 pre-conditions (must complete before factory code):**
+- Fix metric key mismatch: metrics["defi-coverage"] → metrics["defi_coverage"] in mcp-server/server.go
+- Implement ReportMetrics/SubmitFitnessSnapshot RPC (proposal pending)
+- Implement MCP approve_action IsSecurityAdjacent check (proposal pending)
+**Phase 6 acceptance criteria:** analyst-verdicts/2026-04-09-050000-phase5-approved.md
+**Verdict:** analyst-verdicts/2026-04-09-050000-phase5-approved.md
+
+---
+
+## 2026-04-09 04:50:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 5 — Factory Round 2 Review
+**Status:** CONDITIONAL — 2 missing mandatory anatomy items + compiled binary in repo
+**What was completed:**
+- REGRESSION-1: VetoAction SaveMerkleLeaf fixed with error check + codes.Internal ✓
+- domain-fitness/metrics.go: all 5 metrics correct thresholds/directions ✓
+- worker/main.go: CreateFactory + RegisterDomainMetrics on startup ✓
+- Both proposals filed: mcp-transport-stdio.md + mcp-tool-security.md ✓
+- MISSING-1: mcp-server/ subdirectory absent — mandatory factory anatomy
+- MISSING-2: analyst-briefing/ subdirectory absent — mandatory factory anatomy
+- PROCESS: compiled binary worker/analyst-worker committed to repo
+- ADVISORY: no ReportMetrics RPC — metric values collected but never pushed to Root Spine
+**Required from AntiGravity:**
+- Implement factories/synthetic-analyst/mcp-server/ with ≥1 domain tool
+- Create factories/synthetic-analyst/analyst-briefing/ with briefing template
+- Delete committed binary; add to .gitignore
+- File proposal for ReportMetrics/SubmitFitnessSnapshot RPC before Phase 5 closes
+**Questions answered:** 10s interval accepted; MCP tool restriction policy accepted
+**Verdict:** analyst-verdicts/2026-04-09-045000-phase5-round2-review.md
+
+---
+
+## 2026-04-09 04:35:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 5 — Pre-conditions Review
+**Status:** CONDITIONAL — scope mislabeled; 1 regression; factory not started
+**What was completed:**
+- MCP host (internal/mcp/): HTTP transport on :8082, tools/list, tools/call wired to Root Spine ✓
+- UNSAFE Merkle leaf: SaveMerkleLeaf added in UNSAFE branch ✓
+- go mod tidy: improbable-eng + rs/cors promoted to direct ✓
+- REGRESSION-1: VetoAction line 317 — SaveMerkleLeaf return value completely discarded, no error check
+- ADVISORY: stdio transport missing; approve_action MCP tool bypasses Translucent Gate signature invariant
+- SCOPE: factories/synthetic-analyst/ has only README; actual Phase 5 factory not implemented
+**Required from AntiGravity:**
+- Fix VetoAction SaveMerkleLeaf error handling (server.go line 317)
+- File proposals for stdio transport gap and MCP approve_action bypass
+- Then begin actual Phase 5: factories/synthetic-analyst/ with 5 sub-components + domain fitness metrics
+**Verdict:** analyst-verdicts/2026-04-09-043500-phase5-review.md
+
+---
+
+## 2026-04-09 04:15:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 4 — APPROVED
+**Status:** PHASE 4 COMPLETE — Phase 5 authorized
+**What was completed:**
+- Phase 4.1 remediation review: both critical items resolved
+- CRITICAL-1: new VetoRequest() with setVetoedBy/setRationale — correct binary encoding ✓
+- CRITICAL-2: grpcweb.WrapServer on :8081 with CORS; GRPC_WEB_URL updated to :8081 ✓
+- go.mod declares improbable-eng/grpc-web + rs/cors ✓
+**Phase 5 pre-conditions:**
+- internal/mcp/ is empty — MCP host required before any factory can register
+- UNSAFE verdicts produce no Merkle leaf — must be fixed in Phase 5
+- go mod tidy before committing Phase 5 changes
+**Verdict:** analyst-verdicts/2026-04-09-041500-phase4-approved.md
+
+---
+
+## 2026-04-09 03:40:00 UTC — Analyst Droid (Claude Code)
+**Phase:** 3 — APPROVED
+**Status:** PHASE 3 COMPLETE — Phase 4 integration authorized
+**What was completed:**
+- WebSocket Hub: implemented + wired ✓
+- Gate routing: implemented + wired ✓
+- ApproveAction/VetoAction: implemented with DB + Merkle + hub ✓
+- SaveMerkleLeaf: called in SubmitProposal + approval/veto handlers ✓
+- main.go: correctly passes hub and gate to NewServer ✓
+**Phase 4 notes (carry forward):**
+- SaveMerkleLeaf/UpdateProposalVerdict error returns discarded — must propagate in Phase 4
+- TestVerifyProposal_Safe uses invalid payload schema — advisory fix
+- MCP host still empty — required before Phase 5
+- UNSAFE verdicts produce no Merkle leaf — design gap
+**Next action for AntiGravity:** Begin Phase 4 integration per analyst-verdicts/2026-04-09-000200-phase4-controlpanel-review.md. Wire real gRPC calls, extract DhammaReflection, add tests. Submit briefing when done.
+
+---
+
 ## 2026-04-09 03:20:00 UTC — Analyst Droid (Claude Code)
 **Phase:** 3 — Root Spine Review
 **Status:** CONDITIONAL — 3 false claims + 1 critical gap

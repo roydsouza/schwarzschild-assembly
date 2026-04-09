@@ -254,6 +254,41 @@ fi
 
 echo ""
 
+# ── 5b. SWI-Prolog ───────────────────────────────────────────────────────────
+echo "── SWI-Prolog ──"
+
+if ! command -v swipl &>/dev/null; then
+  warn "SWI-Prolog not found"
+  brew_install swi-prolog "SWI-Prolog 9.x" || true
+else
+  ok "SWI-Prolog: $(swipl --version 2>/dev/null | head -1)"
+fi
+
+echo ""
+
+# ── 5c. Haskell (GHCup) ──────────────────────────────────────────────────────
+echo "── Haskell / GHCup ──"
+
+if ! command -v ghc &>/dev/null; then
+  warn "GHC not found"
+  if [[ "$CHECK_ONLY" == true ]]; then
+    fail "GHC: not installed (install via: curl -sSf https://get-ghcup.haskell.org | sh)"
+    ERRORS=$((ERRORS + 1))
+  else
+    info "Installing GHCup (GHC, Cabal, HLS)..."
+    curl -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
+    export PATH="$HOME/.ghcup/bin:$PATH"
+    ok "GHCup: installed — restart shell or source ~/.ghcup/env"
+  fi
+else
+  ok "GHC: $(ghc --version 2>/dev/null)"
+  if command -v cabal &>/dev/null; then
+    ok "Cabal: $(cabal --version 2>/dev/null | head -1)"
+  fi
+fi
+
+echo ""
+
 # ── 6. Go tools ───────────────────────────────────────────────────────────────
 echo "── Go Tools ──"
 

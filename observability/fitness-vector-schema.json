@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "SatiCentral.FitnessVector",
   "description": "Authoritative definition of all global fitness metrics for Sati-Central. Every metric has a name, unit, collection method, evaluation direction, weight, and auto-escalation threshold. This schema is machine-read by the evaluation engine — not documentation.",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "x-amendment": "amendment-2026-04-09-drop-dhamma-adviser — replaced dhamma_alignment with artifact_correctness and code_quality",
   "type": "object",
   "required": ["schema_version", "timestamp_ms", "metrics"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "1.0.0",
+      "const": "2.0.0",
       "description": "Schema version. Increment minor for additive changes, major for breaking changes."
     },
     "timestamp_ms": {
@@ -23,11 +24,12 @@
     },
     "metrics": {
       "type": "object",
-      "description": "Map of metric_id → MetricState. All five global metrics must be present in a valid snapshot.",
+      "description": "Map of metric_id → MetricState. All six global metrics must be present in a valid snapshot.",
       "required": [
         "safety_compliance",
         "audit_integrity",
-        "dhamma_alignment",
+        "artifact_correctness",
+        "code_quality",
         "system_performance",
         "operational_cost"
       ],
@@ -39,13 +41,13 @@
           "x-metric-meta": {
             "unit": "violations/day",
             "direction": "lower_is_better",
-            "weight": 0.30,
+            "weight": 0.25,
             "auto_escalation_threshold": {
               "operator": "gte",
               "value": 1,
               "description": "Any violation — no tolerance."
             },
-            "collection_method": "Counter emitted by safety-rail on each SafetyVerdict::Unsafe result. OTel metric name: sati_central.safety.violations_total",
+            "collection_method": "Counter emitted by safety-rail on each SafetyVerdict::Unsafe result.",
             "otel_metric_name": "sati_central.safety.violations_total",
             "otel_metric_type": "counter"
           }
@@ -56,31 +58,48 @@
           "x-metric-meta": {
             "unit": "failures",
             "direction": "lower_is_better",
-            "weight": 0.25,
+            "weight": 0.20,
             "auto_escalation_threshold": {
               "operator": "gte",
               "value": 1,
               "description": "Any Merkle consistency failure — no tolerance."
             },
-            "collection_method": "Counter emitted by root-spine merkle package on each consistency check failure. OTel metric name: sati_central.audit.consistency_failures_total",
+            "collection_method": "Counter emitted by root-spine merkle package on each consistency check failure.",
             "otel_metric_name": "sati_central.audit.consistency_failures_total",
             "otel_metric_type": "counter"
           }
         },
-        "dhamma_alignment": {
+        "artifact_correctness": {
           "$ref": "#/$defs/MetricState",
-          "description": "Aggregate MoralWeighting score from Dhamma-Adviser, 0.0–1.0. Below 0.6 triggers auto-escalation.",
+          "description": "Aggregate test pass rate across all factory-produced artifacts in the evaluation window. Emitted by Code Assurance Factory via ReportMetrics.",
           "x-metric-meta": {
-            "unit": "score [0.0, 1.0]",
+            "unit": "percent [0, 100]",
+            "direction": "higher_is_better",
+            "weight": 0.25,
+            "auto_escalation_threshold": {
+              "operator": "lt",
+              "value": 95,
+              "description": "Test pass rate below 95% requires Analyst Droid review before further proposals are approved."
+            },
+            "collection_method": "Gauge emitted by code-assurance factory after each test run. Aggregated across all assessed factories.",
+            "otel_metric_name": "sati_central.quality.test_pass_rate",
+            "otel_metric_type": "gauge"
+          }
+        },
+        "code_quality": {
+          "$ref": "#/$defs/MetricState",
+          "description": "Composite of lint violation rate and mean cyclomatic complexity, normalized to [0, 100] where 100 = perfect. Factory-defined normalization per language. Emitted by Code Assurance Factory.",
+          "x-metric-meta": {
+            "unit": "score [0, 100]",
             "direction": "higher_is_better",
             "weight": 0.15,
             "auto_escalation_threshold": {
               "operator": "lt",
-              "value": 0.6,
-              "description": "Score below 0.6 requires Analyst Droid review."
+              "value": 70,
+              "description": "Composite quality score below 70 requires Analyst Droid review."
             },
-            "collection_method": "Gauge emitted by dhamma-adviser on each MoralWeighting evaluation. OTel metric name: sati_central.dhamma.alignment_score",
-            "otel_metric_name": "sati_central.dhamma.alignment_score",
+            "collection_method": "Gauge emitted by code-assurance factory. Normalization function registered via RegisterDomainMetrics.",
+            "otel_metric_name": "sati_central.quality.code_quality_score",
             "otel_metric_type": "gauge"
           }
         },
@@ -90,7 +109,7 @@
           "x-metric-meta": {
             "unit": "composite",
             "direction": "lower_p99_higher_throughput",
-            "weight": 0.20,
+            "weight": 0.10,
             "auto_escalation_threshold": {
               "operator": "p99_gt",
               "value": 500,
@@ -113,17 +132,17 @@
         },
         "operational_cost": {
           "$ref": "#/$defs/MetricState",
-          "description": "USD/day for tokens + API. 20% week-over-week increase triggers auto-escalation.",
+          "description": "USD/day for tokens + API calls. 20% week-over-week increase triggers auto-escalation.",
           "x-metric-meta": {
             "unit": "USD/day",
             "direction": "lower_is_better",
-            "weight": 0.10,
+            "weight": 0.05,
             "auto_escalation_threshold": {
               "operator": "week_over_week_pct_increase_gte",
               "value": 20,
               "description": "More than 20% week-over-week cost increase requires Analyst Droid review."
             },
-            "collection_method": "Gauge emitted by each factory's cost accounting module. OTel metric name: sati_central.cost.usd_per_day",
+            "collection_method": "Gauge emitted by each factory's cost accounting module.",
             "otel_metric_name": "sati_central.cost.usd_per_day",
             "otel_metric_type": "gauge"
           }
