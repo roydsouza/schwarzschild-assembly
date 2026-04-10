@@ -102,13 +102,13 @@ done
 # ── 4. PROLOG SAFETY ──────────────────────────────────────────────
 if [ -d core-station/protoplasm ]; then
   echo ""
-  echo "── PROLOG SAFETY ──"
+  echo "── STASIS SAFETY ──"
   violations=$(set +e; grep -rn 'assertz(\|retract(' core-station/protoplasm/ \
     --include='*.pl' \
     | grep -v 'safe_assert\|safe_retract\|%\|test_\|_test\.pl\|core/safety_bridge\.pl' \
     | wc -l | tr -d ' '; set -e)
   if [ "$violations" -eq 0 ]; then
-    ok "No bare assertz/retract in production Prolog code"
+    ok "No bare assertz/retract in production STASIS code"
   else
     fail "Found $violations bare assertz/retract calls"
   fi

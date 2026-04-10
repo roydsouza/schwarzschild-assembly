@@ -1,20 +1,20 @@
-# The Schwarzschild Assembly
+# Schwarzschild Assembly: Aethereum-Spine Space Station
 
-The Schwarzschild Assembly is a **Meta-Factory** (Space Station) designed to build, repair, and retrofit autonomous software applications (**Spacecraft**) using self-evolving assembly lines gated by rigorous safety protocols. This is a Dark Factory for building applications (spacecraft) without the "AI Slop" of Vibe Coding.
+The Schwarzschild Assembly is a **Meta-Factory** (Space Station) designed to build, repair, and retrofit autonomous software applications (**Spacecraft**) using self-evolving assembly lines gated by rigorous safety protocols.
 
 ## 🛰️ Architecture: The Space Station Model
 
-A Schwarzschild Spacecraft is composed of a hardened **Static Shell** (Go/Rust) and a malleable **Protoplasm Mind** (Prolog). This "Shell/Mind" dichotomy ensures that applications are both physically secure and logically self-evolving.
+The station is organized into a persistent **Core Station** and ephemeral **Docking Bays**.
+
+A Schwarzschild Spacecraft is composed of a hardened **Static Shell** (Go/Rust) and a malleable **Protoplasm Mind** ([STASIS](./STASIS-LANGUAGE.md)). This "Shell/Mind" dichotomy ensures that applications are both physically secure and logically self-evolving.
 
 **Deep Dive:** For the technical specification of spacecraft anatomy, see **[Spacecraft Architecture](./SPACECRAFTS.md)**.
 
-The station is organized into a persistent **Core Station** and ephemeral **Docking Bays**.
-
 ### 🏗️ Station Naming Convention
-- **Space Station (Meta-Factory):** The main repository (`schwarzschild-assembly`). It provides the shared intelligence, machinery, and governance.
+- **Space Station (Meta-Factory):** The main repository (\`schwarzschild-assembly\`). It provides the shared intelligence, machinery, and governance.
 - **Spacecraft (Application):** A modular software product (e.g., a CLI tool, a Web App) built within the station.
 - **Docking Bay (Assembly Line):** A temporary workspace where a specific spacecraft is actively modularized or repaired.
-- **Protoplasm (Intelligence):** The shared Prolog reasoning substrate that provides the "Life Support" to all spacecraft.
+- **Protoplasm (Intelligence):** The shared [STASIS](./STASIS-LANGUAGE.md) reasoning substrate that provides the "Life Support" to all spacecraft. See [STASIS-LANGUAGE.md](./STASIS-LANGUAGE.md) for the technical specification.
 - **Machinery (Engines):** The reusable Go/Rust factories that perform the actual code manufacturing.
 - **Dry Dock (Archives):** Storage for completed mission snapshots and flight data.
 
@@ -24,7 +24,7 @@ Every spacecraft follows a rigorous lifecycle from initial docking to final laun
 
 **Deep Dive:** For a comprehensive technical manual on build-release-repair cycles, see the **[Operations Manual](./OPERATIONS.md)**.
 
-### 🛡️ The HOTL Process (High-Order Test Loop)
+### 🛡️ The HOTL Process (Human On The Loop)
 All assembly and refit work is governed by the **HOTL Process**. This Two-Agent protocol ensures that no code is launched without an independent audit and safety-rail verification.
 - **Forge (The Builder):** Proposes and implements modifications.
 - **Crucible (The Auditor):** Verifies modifications against the station's safety policies and gives final launch approval.

@@ -19,8 +19,8 @@ The Shell is the spacecraft's interface with the physical and digital universe.
 
 The Protoplasm is the spacecraft's reasoning engine and the seat of its self-evolution.
 
-- **Substrate:** Prolog (Symbolic Logic).
-- **Nature:** **Malleable and Self-Evolving.** Because Prolog code is represented as symbolic data (homoiconicity), the mind can reason about its own rules and modify them at runtime.
+- **Substrate:** [STASIS](./STASIS-LANGUAGE.md) (Tiered Symbolic Logic, executed by SWI-Prolog). See [STASIS-LANGUAGE.md](./STASIS-LANGUAGE.md).
+- **Nature:** **Malleable and Self-Evolving.** Because [STASIS](./STASIS-LANGUAGE.md) code is represented as symbolic data (homoiconicity), the mind can reason about its own rules and modify them at runtime.
 - **Responsibilities:**
     - Business logic and complex decision-making.
     - Safety constraint heuristics.
@@ -36,7 +36,7 @@ The relationship between Shell and Mind is governed by the **Aethereum-Spine**.
 1. **Perception:** The Shell receives a signal (e.g., a user request or a sensor reading).
 2. **Consultation:** The Shell queries the Protoplasm: *"Is this action safe and consistent with our mission?"*
 3. **Reasoning:** The Protoplasm evaluates the query against its current knowledge base and safety constraints.
-4. **Conclusion:** The Protoplasm returns a symbolic result (e.g., `accept`, `reject`, or `propose_retry`).
+4. **Conclusion:** The Protoplasm returns a symbolic result (e.g., \`accept\`, \`reject\`, or \`propose_retry\`).
 5. **Execution:** The Shell performs the physical action based on the Mind's decision.
 
 ### The Self-Evolution Loop (Phases 11+)

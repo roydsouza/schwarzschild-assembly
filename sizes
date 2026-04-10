@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Check if an argument was provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <size_in_KB>"
+    exit 1
+fi
+
+THRESHOLD_KB=$1
+
+# Ensure the input is a number
+if ! [[ "$THRESHOLD_KB" =~ ^[0-9]+$ ]]; then
+    echo "Error: Please provide a valid integer for KB."
+    exit 1
+fi
+
+echo "Searching for files larger than ${THRESHOLD_KB}KB..."
+echo "------------------------------------------------"
+
+# 1. find: Look for files (-type f) larger than X kilobytes (+Xk)
+# 2. awk: Use dot as a field separator to get the extension
+# 3. sort/uniq: Count occurrences of each extension
+find . -type f -size +"${THRESHOLD_KB}k" | \
+awk -F. 'NF>1 {print $NF}' | \
+sort | \
+uniq -c | \
+sort -rn
+
+if [ ${PIPESTATUS} -ne 0 ]; then
+    echo "No files found exceeding that size."
+fi

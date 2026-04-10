@@ -2,6 +2,9 @@
 **Version:** 1.0 — 2026-04-10
 **Canonical spec:** CLAUDE.md (this document is a human-readable companion, not a substitute)
 
+> [!IMPORTANT]
+> **Operational Paradigm:** This guide currently follows the **Human On The Loop (HOTL)** protocol. This is a deliberate, temporary phase in the assembly's evolution. We are progressing toward a complete **Human Out Of The Loop (HOOTL)** state, characterizing the transition into a true **Dark Factory**—where the orchestrator handles all decision paths autonomously within the Safety Rail's formal constraints.
+
 ---
 
 ## CHEAT SHEET
@@ -13,7 +16,7 @@
 ║  Forge        Builder Droid — writes code, files briefings       ║
 ║  Crucible     Auditor Droid — reviews artifacts, issues verdicts ║
 ║  Claude       Analyst Droid — supervisory authority, depth audit ║
-║  Roy          Human In The Loop — routes, overrides, escalates   ║
+║  Roy          Human On The Loop — routes, overrides, escalates   ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 ╔══════════════════════════════════════════════════════════════════╗
@@ -172,7 +175,7 @@ double-review: either Crucible reviews it or Claude does, not both.
 Claude's verdicts go to `analyst-verdicts/`. Crucible's verdicts go to `crucible-verdicts/`.
 Roy can tell which layer issued a verdict by the directory.
 
-#### Roy (Human In The Loop)
+#### Roy (Human On The Loop)
 Roy is the only entity that can move artifacts between the others. Nothing flows without
 Roy choosing to forward or escalate. This is intentional: Roy's awareness is the audit
 trail for routing decisions.

@@ -414,10 +414,10 @@ finalize_spec(spec_id)                               → SpecDocument (committed
 | performance-critical, parser, cryptography, compact binary | Rust |
 | agent, LLM, RAG, ML, agentic, self-modifying | Python |
 | UI, frontend, browser | TypeScript |
-| knowledge base, logic rules, constraint solving, self-modifying skills | Prolog (SWI-Prolog) |
+| knowledge base, logic rules, constraint solving, self-modifying skills | [STASIS](./STASIS-LANGUAGE.md) (SWI-Prolog runtime) |
 | formal correctness, property-based verification, type-driven | Haskell |
 
-Multi-language services declare one primary and any secondaries. Self-modifying agent components default to Python unless the spec explicitly calls for knowledge-base-style skill storage, in which case Prolog is preferred (see Phase 8). New languages are added by creating `factories/scaffold-engine/templates/<language>/` — no other change required.
+Multi-language services declare one primary and any secondaries. Self-modifying agent components default to Python unless the spec explicitly calls for knowledge-base-style skill storage, in which case [STASIS](./STASIS-LANGUAGE.md) is preferred (see Phase 8). New languages are added by creating `factories/scaffold-engine/templates/<language>/` — no other change required.
 
 ---
 
@@ -465,15 +465,15 @@ An agent generates new source code and submits it as an `ActionProposal` via the
 
 ---
 
-### Phase 8 — Prolog Self-Enhancement Framework *(Homoiconic skill substrate for self-modifying agents.)*
+### Phase 8 — [STASIS](./STASIS-LANGUAGE.md) Self-Enhancement Framework *(Homoiconic skill substrate for self-modifying agents.)*
 
-SWI-Prolog is the native substrate for Option A self-modification. In Prolog, programs are data — an agent's skills are clauses it can inspect, construct, and update using the same logic it uses to reason about anything else. Phase 8 provides the infrastructure that makes this safe, auditable, and integrated with the existing pipeline.
+[STASIS](./STASIS-LANGUAGE.md), running on SWI-Prolog, is the native substrate for Option A self-modification. In [STASIS](./STASIS-LANGUAGE.md), programs are data — an agent's skills are clauses it can inspect, construct, and update using the same logic it uses to reason about anything else. Phase 8 provides the infrastructure that makes this safe, auditable, and integrated with the existing pipeline. See `[STASIS](./STASIS-LANGUAGE.md)-LANGUAGE.md` for the full language reference including the three-tier architecture.
 
 ---
 
-#### Why Prolog
+#### Why [STASIS](./STASIS-LANGUAGE.md)
 
-In conventional agent architectures, code and data are separate. Self-modification means writing to source files — a privileged, risky operation. In Prolog, there is no distinction: the agent's behavior *is* its knowledge base. `safe_assert(NewClause)` is semantically equivalent to `UpdateSkill` — except the agent constructs the new skill as a Prolog term, not a string blob.
+In conventional agent architectures, code and data are separate. Self-modification means writing to source files — a privileged, risky operation. In [STASIS](./STASIS-LANGUAGE.md), there is no distinction: the agent's behavior *is* its knowledge base. `safe_assert(NewClause)` is semantically equivalent to `UpdateSkill` — except the agent constructs the new skill as a [STASIS](./STASIS-LANGUAGE.md) term, not a string blob.
 
 This enables a closed self-improvement loop that never touches source files:
 
@@ -616,7 +616,7 @@ Runtime-asserted clauses are persisted to PostgreSQL via `merkle_bridge.pl` afte
 
 ---
 
-#### Domain fitness extension for Prolog Substrate
+#### Domain fitness extension for [STASIS](./STASIS-LANGUAGE.md) Substrate
 
 - Skill update rate (safe_assert calls/day) — trend metric, no escalation threshold
 - Skill rejection rate (% of proposals rejected by Safety Rail or CHR) — escalation: > 20%
@@ -750,7 +750,7 @@ These apply to every artifact in this repository — yours and AntiGravity's. Yo
 - **Python:** 3.12+. `uv` for dependency management. Type annotations are not optional.
 - **React/Next.js:** App Router. No `any` in TypeScript. WebSocket connection to Root Spine uses WebTransport where available, HTTP/1.1 upgrade as fallback.
 - **PostgreSQL:** Version 16+. All schema changes are numbered migrations in `aethereum-spine/internal/persistence/migrations/`. No ad-hoc `ALTER TABLE` in production.
-- **SWI-Prolog:** 9.x (native aarch64 via `brew install swi-prolog`). Use `library(plunit)` for tests, `library(chr)` for constraint rules, `library(pengines)` for sandboxed execution. All clause modifications must go through `safe_assert/1` (see Phase 8). Never call `assert/retract` directly in production agent code.
+- **SWI-Prolog / [STASIS](./STASIS-LANGUAGE.md):** SWI-Prolog 9.x (native aarch64 via `brew install swi-prolog`) is the runtime for the [STASIS](./STASIS-LANGUAGE.md) substrate (see `[STASIS](./STASIS-LANGUAGE.md)-LANGUAGE.md`). Use `library(plunit)` for tests, `library(chr)` for Tier 2 constraint rules, `library(tabling)` for Tier 1 decidable predicates, `library(pengines)` for sandboxed evaluation. All clause modifications must go through `safe_assert/1` (see Phase 8). Never call `assert/retract` directly in production agent code.
 - **Haskell:** GHC 9.x via GHCup (`curl -sSf https://get-ghcup.haskell.org | sh`). Use Stack for project management. `HLint` for linting, `QuickCheck` for property-based tests, `HUnit` for unit tests. Prefer `cabal.project` with pinned bounds for reproducibility.
 
 ---
@@ -812,7 +812,7 @@ Before filing a completion briefing, verify every line of the relevant checklist
 ✓ cd aethereum-spine && go test ./...
 ```
 
-**Phase 8 — Prolog Self-Enhancement Framework**
+**Phase 8 — [STASIS](./STASIS-LANGUAGE.md) Self-Enhancement Framework**
 ```
 ✓ ls agents/prolog-substrate/core/safety_bridge.pl
 ✓ ls agents/prolog-substrate/core/merkle_bridge.pl
