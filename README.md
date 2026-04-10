@@ -1,6 +1,6 @@
-# Schwarzschild Assembly: Aethereum-Spine Space Station
+# The Schwarzschild Assembly
 
-The Schwarzschild Assembly is a **Meta-Factory** (Space Station) designed to build, repair, and retrofit autonomous software applications (**Spacecraft**) using self-evolving assembly lines gated by rigorous safety protocols.
+The Schwarzschild Assembly is a **Meta-Factory** (Space Station) designed to build, repair, and retrofit autonomous software applications (**Spacecraft**) using self-evolving assembly lines gated by rigorous safety protocols. This is a Dark Factory for building applications (spacecraft) without the "AI Slop" of Vibe Coding.
 
 ## 🛰️ Architecture: The Space Station Model
 
