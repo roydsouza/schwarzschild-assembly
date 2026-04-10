@@ -52,10 +52,10 @@ Semantic metrics are emitted via the `opentelemetry` and `opentelemetry-otlp` cr
 
 | Metric | Type | Trigger |
 |--------|------|---------|
-| `sati_central.safety.violations_total` | Counter | Incremented on `SafetyVerdict::Unsafe` |
-| `sati_central.safety.verifications_total` | Counter | Incremented on every `verify_proposal` call |
-| `sati_central.safety.verification_duration_ms` | Histogram | Latency for Z3 verification |
-| `sati_central.safety.constraints_total` | Gauge | Count of active Z3 constraints |
+| `aethereum_spine.safety.violations_total` | Counter | Incremented on `SafetyVerdict::Unsafe` |
+| `aethereum_spine.safety.verifications_total` | Counter | Incremented on every `verify_proposal` call |
+| `aethereum_spine.safety.verification_duration_ms` | Histogram | Latency for Z3 verification |
+| `aethereum_spine.safety.constraints_total` | Gauge | Count of active Z3 constraints |
 
 ## 4. Deviations & Justifications
 
@@ -69,7 +69,7 @@ Semantic metrics are emitted via the `opentelemetry` and `opentelemetry-otlp` cr
 ## 6. Proposed Next Phase
 
 **Phase 3 — Root Spine Go Implementation.**
-Building the gRPC server wrapper around this Tier 1 library to provide the core orchestration boundary for Sati-Central.
+Building the gRPC server wrapper around this Tier 1 library to provide the core orchestration boundary for Aethereum-Spine.
 
 ---
 

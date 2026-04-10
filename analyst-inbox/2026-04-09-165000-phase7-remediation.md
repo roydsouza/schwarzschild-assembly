@@ -9,7 +9,7 @@ This briefing confirms the completion of all remediation items identified in the
 
 ## Remediation Details
 1. **Lifecycle Gates (CRITICAL-1)**:
-   - Updated `root-spine/internal/grpc/server.go` with strict sequential logic.
+   - Updated `aethereum-spine/internal/grpc/server.go` with strict sequential logic.
    - Enforced: No backward transitions, no state skipping.
    - Enforced: `INTAKE` -> `DESIGN` only permitted if `SpecDocument.is_finalized` is `true`.
 2. **Requirements Advisor (SIGNIFICANT-2)**:
@@ -21,7 +21,7 @@ This briefing confirms the completion of all remediation items identified in the
    - Created `analyst-briefing/template.md`.
 4. **Verification (SIGNIFICANT-5)**:
    - Refactored gRPC `Server` to use a `Store` interface for testability.
-   - Implemented `root-spine/internal/grpc/lifecycle_test.go` verifying all gate edge cases.
+   - Implemented `aethereum-spine/internal/grpc/lifecycle_test.go` verifying all gate edge cases.
    - Implemented `factories/scaffold-engine/domain-fitness/metrics_test.go` verifying threshold registration.
 
 ## Verification Output

@@ -23,12 +23,12 @@ Phase 10 is completed. This briefing provides a high-integrity, verbatim capture
 
 ```text
 ============================================================
-  Sati-Central Pre-Submission Verification
+  Aethereum-Spine Pre-Submission Verification
   2026-04-10 01:40:06 UTC
 ============================================================
 
 ── BUILD ──
-[PASS] root-spine: go build ./...
+[PASS] aethereum-spine: go build ./...
 [PASS] safety-rail: cargo build --features tier1
 [PASS] control-panel: tsc --noEmit
 [PASS] factories/code-assurance: go build ./...
@@ -36,10 +36,10 @@ Phase 10 is completed. This briefing provides a high-integrity, verbatim capture
 [PASS] factories/synthetic-analyst: go build ./...
 
 ── TESTS (cumulative) ──
-ok  	github.com/rds/sati-central/root-spine/internal/grpc	(cached)
-ok  	github.com/rds/sati-central/root-spine/internal/merkle	(cached)
-ok  	github.com/rds/sati-central/root-spine/internal/safety	(cached)
-[PASS] root-spine: go test ./...
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/grpc	(cached)
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/merkle	(cached)
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/safety	(cached)
+[PASS] aethereum-spine: go test ./...
 
 running 6 tests
 test tier1::fingerprint::tests::test_empty_fingerprint ... ok
@@ -146,7 +146,7 @@ test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 [PASS] No bare assertz/retract in production Prolog code
 
 ── HYGIENE ──
-[PASS] root-spine: go mod tidy produces no diff
+[PASS] aethereum-spine: go mod tidy produces no diff
 [PASS] factories/code-assurance: go mod tidy produces no diff
 [PASS] factories/scaffold-engine: go mod tidy produces no diff
 [PASS] factories/synthetic-analyst: go mod tidy produces no diff

@@ -15,13 +15,13 @@ Phase 5 is now physically and architecturally complete. All anatomy gaps identif
 - **REGRESSION-1 (Fixed):** Audit invariant in `VetoAction` is active.
 
 ## Artifacts
-- [factories/synthetic-analyst/mcp-server/](file:///Users/rds/antigravity/schwarzschild-assembly/factories/synthetic-analyst/mcp-server/)
-- [factories/synthetic-analyst/analyst-briefing/](file:///Users/rds/antigravity/schwarzschild-assembly/factories/synthetic-analyst/analyst-briefing/)
-- [proposals/pending/metrics-reporting-rpc.md](file:///Users/rds/antigravity/schwarzschild-assembly/proposals/pending/metrics-reporting-rpc.md)
+- [factories/synthetic-analyst/mcp-server/](factories/synthetic-analyst/mcp-server/)
+- [factories/synthetic-analyst/analyst-briefing/](factories/synthetic-analyst/analyst-briefing/)
+- [proposals/pending/metrics-reporting-rpc.md](proposals/pending/metrics-reporting-rpc.md)
 
 ## Analyst Questions
 - Does the `DomainMCPServer` implementation serve as a sufficient reference for Phase 6 factory builds?
 - Is the `MetricReport` message structure in the new proposal optimal for OTel mapping?
 
 ---
-*Submitted via Sati-Central Root Spine bridge (project-root inbox)*
+*Submitted via Aethereum-Spine Root Spine bridge (project-root inbox)*

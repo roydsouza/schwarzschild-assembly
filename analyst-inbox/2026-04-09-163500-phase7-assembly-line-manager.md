@@ -19,12 +19,12 @@ Captured from `scripts/pre-submit.sh`:
 
 ```text
 ============================================================
-  Sati-Central Pre-Submission Verification
+  Aethereum-Spine Pre-Submission Verification
   2026-04-09 16:22:36 UTC
 ============================================================
 
 ── BUILD ──
-[PASS] root-spine: go build ./...
+[PASS] aethereum-spine: go build ./...
 [PASS] safety-rail: cargo build --features tier1
 [PASS] control-panel: tsc --noEmit
 [PASS] factories/code-assurance: go build ./...
@@ -32,7 +32,7 @@ Captured from `scripts/pre-submit.sh`:
 [PASS] factories/synthetic-analyst: go build ./...
 
 ── TESTS (cumulative) ──
-[PASS] root-spine: go test ./...
+[PASS] aethereum-spine: go test ./...
 [PASS] safety-rail: cargo test --features tier1
 [PASS] control-panel: vitest run
 
@@ -65,7 +65,7 @@ Captured from `scripts/pre-submit.sh`:
 [PASS] synthetic-analyst: README.md exists
 
 ── HYGIENE ──
-[PASS] root-spine: go mod tidy produces no diff
+[PASS] aethereum-spine: go mod tidy produces no diff
 [PASS] factories/code-assurance: go mod tidy produces no diff
 [PASS] factories/scaffold-engine: go mod tidy produces no diff
 [PASS] factories/synthetic-analyst: go mod tidy produces no diff

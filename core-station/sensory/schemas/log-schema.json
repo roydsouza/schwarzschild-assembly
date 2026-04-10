@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SatiCentral.StructuredLogEntry",
+  "description": "Authoritative schema for all structured log entries in Aethereum-Spine. Every log entry on a production code path must conform to this schema. Freeform strings are permitted only in the 'message' field. All other fields are typed.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "timestamp_ms",
+    "level",
+    "component",
+    "event_kind",
+    "message",
+    "trace_id",
+    "agent_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Log schema version. Allows parsers to handle multiple schema generations."
+    },
+    "timestamp_ms": {
+      "type": "integer",
+      "description": "Unix epoch milliseconds. Derived from UUIDv7 where possible for monotonic ordering."
+    },
+    "level": {
+      "type": "string",
+      "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"],
+      "description": "Log level. FATAL implies the component is halting."
+    },
+    "component": {
+      "type": "string",
+      "enum": [
+        "aethereum-spine",
+        "safety-rail",
+        "dhamma-adviser",
+        "merkle-log",
+        "control-panel",
+        "otel-collector",
+        "factory.synthetic-analyst",
+        "factory.unknown",
+        "scripts"
+      ],
+      "description": "Which Aethereum-Spine component emitted this entry."
+    },
+    "event_kind": {
+      "$ref": "#/$defs/EventKind",
+      "description": "Typed event category. Determines which fields in 'payload' are required."
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1024,
+      "description": "Human-readable summary. The ONLY freeform string field. Must not contain structured data — put that in payload."
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "OTel trace ID (32 hex chars). All zero if no active trace."
+    },
+    "span_id": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "OTel span ID (16 hex chars). Null if not inside a span."
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Identifier of the agent or process that emitted this entry (e.g., 'aethereum-spine', 'antigravity', 'claude-code')."
+    },
+    "request_id": {
+      "type": ["string", "null"],
+      "description": "UUIDv7 for the request/operation this log entry belongs to. Null for system-level events."
+    },
+    "proposal_id": {
+      "type": ["string", "null"],
+      "description": "UUIDv7 of the ActionProposal in context, if any."
+    },
+    "safety_tier": {
+      "type": ["string", "null"],
+      "enum": ["Tier1", "Tier2", null],
+      "description": "Safety verification tier active when this entry was emitted, if applicable."
+    },
+    "policy_fingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 hex of the policy constraint set at emission time. Null if safety-rail not involved."
+    },
+    "fitness_metric": {
+      "type": ["string", "null"],
+      "enum": [
+        "safety_compliance",
+        "audit_integrity",
+        "dhamma_alignment",
+        "system_performance",
+        "operational_cost",
+        null
+      ],
+      "description": "Which fitness metric this entry relates to, if any."
+    },
+    "merkle_leaf_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 hex of the Merkle leaf written as a result of this event, if one was written."
+    },
+    "error": {
+      "$ref": "#/$defs/StructuredError",
+      "description": "Structured error details. Required when level is ERROR or FATAL."
+    },
+    "payload": {
+      "type": ["object", "null"],
+      "description": "Event-specific structured payload. Schema depends on event_kind. Must not contain freeform narrative — use message for that.",
+      "additionalProperties": true
+    },
+    "duration_ms": {
+      "type": ["integer", "null"],
+      "description": "Duration of the operation in milliseconds, if this entry closes an operation."
+    },
+    "model_version": {
+      "type": ["string", "null"],
+      "description": "LLM model identifier string if this entry was emitted during model inference."
+    }
+  },
+  "$defs": {
+    "EventKind": {
+      "type": "string",
+      "enum": [
+        "ProposalSubmitted",
+        "ProposalVerifying",
+        "SafetyVerified",
+        "SafetyViolation",
+        "SafetyTimeout",
+        "ConstraintRegistered",
+        "ConstraintRejected",
+        "SandboxExecutionStarted",
+        "SandboxExecutionComplete",
+        "SandboxViolation",
+        "GatePending",
+        "GateApproved",
+        "GateDenied",
+        "VetoIssued",
+        "FactoryStarted",
+        "FactoryCommit",
+        "FactoryRevert",
+        "MerkleLeafWritten",
+        "MerkleConsistencyCheck",
+        "MerkleConsistencyFailure",
+        "STHSigned",
+        "FitnessVectorUpdated",
+        "FitnessEscalationTriggered",
+        "DhammaEvaluationComplete",
+        "RAGRetrievalComplete",
+        "AmendmentProposed",
+        "AmendmentAccepted",
+        "AmendmentRejected",
+        "Reversion",
+        "SystemStartup",
+        "SystemShutdown",
+        "HealthCheck",
+        "ErrorOccurred"
+      ],
+      "description": "Typed event category. Freeform event names are not permitted."
+    },
+    "StructuredError": {
+      "type": "object",
+      "required": ["kind", "code"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Error category (e.g., 'SafetyViolation', 'MerkleConsistencyFailure', 'PostgresError')."
+        },
+        "code": {
+          "type": "string",
+          "description": "Short machine-readable error code (e.g., 'CONSTRAINT_VIOLATED', 'TIMEOUT', 'IO_ERROR')."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error detail."
+        },
+        "context": {
+          "type": ["object", "null"],
+          "description": "Structured context specific to this error kind.",
+          "additionalProperties": true
+        },
+        "recoverable": {
+          "type": "boolean",
+          "description": "True if the system can continue operating; false if this error requires human intervention."
+        }
+      }
+    }
+  }
+}

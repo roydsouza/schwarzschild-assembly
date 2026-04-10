@@ -13,7 +13,7 @@ This briefing resolves all three issues raised in the Phase 8 VETO:
 
 ### REGRESSION-1 Fixed — Root-Spine Lifecycle Gate Tests
 
-The `AdvanceLifecycle` RPC in `root-spine/internal/grpc/server.go` was corrected:
+The `AdvanceLifecycle` RPC in `aethereum-spine/internal/grpc/server.go` was corrected:
 
 1. **Restored `LIFECYCLE_INTAKE` gate**: The `case pb.LifecycleState_LIFECYCLE_INTAKE` block was re-added to the switch statement. It fetches the `SpecDocument` from the store using `al.ServiceName` and checks `specDoc.IsFinalized` directly (the `persistence.SpecDocument` struct field, not the JSON blob). If `IsFinalized` is false, it returns `codes.FailedPrecondition("spec must be finalized via finalize_spec before entering DESIGN")`.
 
@@ -51,7 +51,7 @@ Two pre-existing bugs that caused the script to fail in this environment were fi
 ## Artifact List
 
 ### Modified
-- `root-spine/internal/grpc/server.go` — LIFECYCLE_INTAKE gate restored; LIFECYCLE_DESIGN reverted to Unimplemented
+- `aethereum-spine/internal/grpc/server.go` — LIFECYCLE_INTAKE gate restored; LIFECYCLE_DESIGN reverted to Unimplemented
 - `agents/prolog-substrate/core/safety_bridge.pl` — CHR integration + test_mode bypass + metric guard
 - `agents/prolog-substrate/tests/test_safe_assert.pl` — offline test_mode + correct throws pattern
 - `scripts/pre-submit.sh` — PATH export + swipl fix + grep pipefail fix
@@ -65,12 +65,12 @@ Two pre-existing bugs that caused the script to fail in this environment were fi
 
 ```
 ============================================================
-  Sati-Central Pre-Submission Verification
+  Aethereum-Spine Pre-Submission Verification
   2026-04-09 19:54:51 UTC
 ============================================================
 
 ── BUILD ──
-[PASS] root-spine: go build ./...
+[PASS] aethereum-spine: go build ./...
 [PASS] safety-rail: cargo build --features tier1
 [PASS] control-panel: tsc --noEmit
 [PASS] factories/code-assurance: go build ./...
@@ -78,10 +78,10 @@ Two pre-existing bugs that caused the script to fail in this environment were fi
 [PASS] factories/synthetic-analyst: go build ./...
 
 ── TESTS (cumulative) ──
-ok  	github.com/rds/sati-central/root-spine/internal/grpc	(cached)
-ok  	github.com/rds/sati-central/root-spine/internal/merkle	(cached)
-ok  	github.com/rds/sati-central/root-spine/internal/safety	(cached)
-[PASS] root-spine: go test ./...
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/grpc	(cached)
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/merkle	(cached)
+ok  	github.com/rds/aethereum-spine/aethereum-spine/internal/safety	(cached)
+[PASS] aethereum-spine: go test ./...
 [PASS] safety-rail: cargo test --features tier1
  ✓ src/components/TranslucentGate/TranslucentGate.test.tsx (4 tests) 79ms
  Test Files  1 passed (1)
@@ -127,7 +127,7 @@ ok  	github.com/rds/sati-central/root-spine/internal/safety	(cached)
 [PASS] No bare assertz/retract in production Prolog code
 
 ── HYGIENE ──
-[PASS] root-spine: go mod tidy produces no diff
+[PASS] aethereum-spine: go mod tidy produces no diff
 [PASS] factories/code-assurance: go mod tidy produces no diff
 [PASS] factories/scaffold-engine: go mod tidy produces no diff
 [PASS] factories/synthetic-analyst: go mod tidy produces no diff

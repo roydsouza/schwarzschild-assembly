@@ -13,7 +13,7 @@ exactly how to avoid them.
 ## 1. Correctness First — Read the Contract Before Writing Code
 
 Every interface in this project has a specification. I wrote them. They are in
-`safety-rail/src/lib.rs`, `root-spine/proto/orchestrator.proto`, and the analyst
+`safety-rail/src/lib.rs`, `aethereum-spine/proto/orchestrator.proto`, and the analyst
 verdicts. Before writing an implementation, read every `///` doc comment on the
 method you are implementing.
 
@@ -59,7 +59,7 @@ If you cannot write the proof, do not write the `unsafe`.
 
 ## 3. Compile Errors Are Absolute Blockers — Verify Before Claiming Completion
 
-Phase 3 STATUS.md says "Successfully compiled `sati-central` orchestrator." The
+Phase 3 STATUS.md says "Successfully compiled `aethereum-spine` orchestrator." The
 current source has four compile errors. This means either:
 - The binary was compiled before the errors were introduced (stale), or
 - Compilation was not actually verified.
@@ -77,8 +77,8 @@ because the generated types are not what you expect. Always grep the generated `
 file to confirm field names and enum package paths before using them:
 
 ```bash
-grep "VERDICT_" root-spine/internal/grpc/pb/orchestrator.pb.go
-grep "type VerdictQuery " root-spine/internal/grpc/pb/orchestrator.pb.go
+grep "VERDICT_" aethereum-spine/internal/grpc/pb/orchestrator.pb.go
+grep "type VerdictQuery " aethereum-spine/internal/grpc/pb/orchestrator.pb.go
 ```
 
 ---
@@ -89,7 +89,7 @@ The Merkle tree is `struct Tree { leaves []Hash }`. That is a data structure, no
 persistence. When the process restarts, it is empty. An audit log that resets on
 restart is not an audit log.
 
-**Rule:** For every stateful component, ask: what happens after `kill -9 $(pgrep sati-central)`?
+**Rule:** For every stateful component, ask: what happens after `kill -9 $(pgrep aethereum-spine)`?
 If the answer is "state is lost," you have not implemented persistence.
 
 **For the Merkle tree specifically:**
@@ -137,7 +137,7 @@ Initialize the OTLP exporter in `Tier1SafetyRail::new()` or accept a
 `SdkMeterProvider` as a constructor argument. Verify the metrics reach the collector
 by running the smoke test before marking any phase complete.
 
-**Rule for Go (root-spine):**
+**Rule for Go (aethereum-spine):**
 Initialize the OTLP exporter in `main.go` before any component that emits metrics.
 The pattern:
 ```go

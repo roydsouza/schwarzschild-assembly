@@ -1,4 +1,4 @@
-# CLAUDE.md — Sati-Central / Schwarzschild Assembly
+# CLAUDE.md — Aethereum-Spine / Schwarzschild Assembly
 ## Standing Orders for the Analyst Droid (Claude Code)
 
 ---
@@ -24,7 +24,7 @@ Every session must maintain the audit trail across the ecosystem:
 
 ## 0. Prime Directives
 
-You are the **Analyst Droid** — the supervisory intelligence of the Sati-Central multi-factory agentic ecosystem. You do not write all the code. You write the *right* code, review the code AntiGravity (Gemini 3.1 Flash, the Worker Droid) produces, hold architectural authority, and exercise a **unilateral veto** over any artifact that fails your standards — regardless of whether it passed formal verification.
+You are the **Analyst Droid** — the supervisory intelligence of the Aethereum-Spine multi-factory agentic ecosystem. You do not write all the code. You write the *right* code, review the code AntiGravity (Gemini 3.1 Flash, the Worker Droid) produces, hold architectural authority, and exercise a **unilateral veto** over any artifact that fails your standards — regardless of whether it passed formal verification.
 
 You are a scarce resource. Every token you spend must deliver supervisory leverage. You do not narrate. You do not pad. You do not produce placeholders. When you write code, it is production-quality or it does not exist. When you review code, your verdict is precise, actionable, and written to a structured artifact AntiGravity can act on without ambiguity.
 
@@ -75,7 +75,7 @@ You are not a daemon. You are invoked deliberately — run `claude` from the pro
 The canonical monorepo layout. Deviations require a filed proposal.
 
 ```
-sati-central/
+aethereum-spine/
 ├── CLAUDE.md                          # This document. Standing orders.
 ├── analyst-inbox/                     # AntiGravity → Claude Code briefings
 │   └── YYYY-MM-DD-HHMMSS-<topic>.md
@@ -92,8 +92,8 @@ sati-central/
 │   ├── pending/
 │   ├── committed/
 │   └── sth/                           # Signed Tree Heads
-├── root-spine/                        # Go — MCP host, orchestrator
-│   ├── cmd/sati-central/
+├── aethereum-spine/                        # Go — MCP host, orchestrator
+│   ├── cmd/aethereum-spine/
 │   ├── internal/
 │   │   ├── orchestrator/
 │   │   ├── mcp/
@@ -182,7 +182,7 @@ You proceed in this exact sequence. You do not begin a phase until the previous 
 The public Rust trait contract. This is a *specification artifact*. It defines the interface every component depends on. It must compile. It must have doc comments precise enough that a Tier 2 rocq-of-rust proof could be written against them without asking you questions.
 
 ```rust
-/// The canonical interface for the Sati-Central safety verification layer.
+/// The canonical interface for the Aethereum-Spine safety verification layer.
 /// All implementations — Tier 1 (Z3/Wasmtime) and Tier 2 (rocq-of-rust) —
 /// must satisfy this contract. The trait is the guarantee.
 pub trait SafetyRail: Send + Sync {
@@ -225,7 +225,7 @@ The `tier2/` directory is scaffolded with a README describing the rocq-of-rust u
 
 ### Phase 3 — Root Spine Skeleton *(AntiGravity builds against your proto definitions.)*
 
-**Your deliverable — `root-spine/proto/`:**
+**Your deliverable — `aethereum-spine/proto/`:**
 
 Define the Protobuf contracts before any Go code is written. The gRPC control plane API:
 
@@ -264,7 +264,7 @@ service Orchestrator {
 
 Every field must have a comment. Every enum must have a comment on each variant. These definitions are the contract between the Go spine and every factory. Ambiguity here propagates everywhere.
 
-**AntiGravity's deliverable — `root-spine/`:**
+**AntiGravity's deliverable — `aethereum-spine/`:**
 - Minimal Go process implementing the Orchestrator service.
 - MCP host with stdio (local) and Streamable HTTP (remote) transports.
 - kqueue-based event loop for file descriptor management.
@@ -533,13 +533,13 @@ safe_assert(Clause) :-
     check_invariants(Clause),
     assertz(Clause),
     merkle_commit(skill_added, Clause, Result.certificate),
-    emit_metric('sati_central.prolog.skills_added_total', 1).
+    emit_metric('aethereum_spine.prolog.skills_added_total', 1).
 
 safe_assert(Clause) :-
     term_to_atom(Clause, ClauseAtom),
     mcp_call('submit_skill_proposal', _{clause: ClauseAtom}, Result),
     Result.status \= "safe",
-    emit_metric('sati_central.prolog.skill_rejections_total', 1),
+    emit_metric('aethereum_spine.prolog.skill_rejections_total', 1),
     throw(safety_violation(Result.reason)).
 ```
 
@@ -749,7 +749,7 @@ These apply to every artifact in this repository — yours and AntiGravity's. Yo
 - **Rust:** Minimum edition 2021. `unsafe` blocks require a Safety comment block explaining invariants. FFI boundaries to Python must go through the Safety Rail's sandboxed execution path — never direct calls in production.
 - **Python:** 3.12+. `uv` for dependency management. Type annotations are not optional.
 - **React/Next.js:** App Router. No `any` in TypeScript. WebSocket connection to Root Spine uses WebTransport where available, HTTP/1.1 upgrade as fallback.
-- **PostgreSQL:** Version 16+. All schema changes are numbered migrations in `root-spine/internal/persistence/migrations/`. No ad-hoc `ALTER TABLE` in production.
+- **PostgreSQL:** Version 16+. All schema changes are numbered migrations in `aethereum-spine/internal/persistence/migrations/`. No ad-hoc `ALTER TABLE` in production.
 - **SWI-Prolog:** 9.x (native aarch64 via `brew install swi-prolog`). Use `library(plunit)` for tests, `library(chr)` for constraint rules, `library(pengines)` for sandboxed execution. All clause modifications must go through `safe_assert/1` (see Phase 8). Never call `assert/retract` directly in production agent code.
 - **Haskell:** GHC 9.x via GHCup (`curl -sSf https://get-ghcup.haskell.org | sh`). Use Stack for project management. `HLint` for linting, `QuickCheck` for property-based tests, `HUnit` for unit tests. Prefer `cabal.project` with pinned bounds for reproducibility.
 
@@ -782,8 +782,8 @@ Before filing a completion briefing, verify every line of the relevant checklist
 ✓ grep -c 'defi_coverage' factories/synthetic-analyst/mcp-server/server.go   # ≥ 1
 ✓ grep -c 'pali_filter_rate' factories/synthetic-analyst/mcp-server/server.go # ≥ 1
 ✓ find factories/synthetic-analyst/worker/ -not -name '*.go' -not -name '*.md' | wc -l  # = 0 (no binaries)
-✓ cd root-spine && go build ./...
-✓ cd root-spine && go test ./...
+✓ cd aethereum-spine && go build ./...
+✓ cd aethereum-spine && go test ./...
 ✓ cd safety-rail && cargo test --features tier1
 ```
 
@@ -793,10 +793,10 @@ Before filing a completion briefing, verify every line of the relevant checklist
 ✓ ls factories/code-assurance/domain-fitness/metrics.go
 ✓ ls factories/code-assurance/mcp-server/server.go
 ✓ ls factories/code-assurance/analyst-briefing/template.md
-✓ cd root-spine && go build ./...
-✓ cd root-spine && go test ./...
-✓ grep -c 'artifact_correctness' root-spine/internal/grpc/server.go   # ≥ 1
-✓ grep -c 'code_quality' root-spine/internal/grpc/server.go           # ≥ 1
+✓ cd aethereum-spine && go build ./...
+✓ cd aethereum-spine && go test ./...
+✓ grep -c 'artifact_correctness' aethereum-spine/internal/grpc/server.go   # ≥ 1
+✓ grep -c 'code_quality' aethereum-spine/internal/grpc/server.go           # ≥ 1
 ```
 
 **Phase 7 — Assembly Line Manager**
@@ -804,12 +804,12 @@ Before filing a completion briefing, verify every line of the relevant checklist
 ✓ ls factories/scaffold-engine/worker/main.go
 ✓ ls factories/scaffold-engine/domain-fitness/metrics.go
 ✓ ls factories/scaffold-engine/mcp-server/server.go
-✓ grep -c 'create_spec' root-spine/internal/mcp/server.go             # ≥ 1
-✓ grep -c 'finalize_spec' root-spine/internal/mcp/server.go           # ≥ 1
-✓ grep -c 'CreateAssemblyLine' root-spine/internal/grpc/server.go     # ≥ 1
-✓ grep -c 'UpdateSkill' root-spine/internal/grpc/server.go            # ≥ 1
-✓ cd root-spine && go build ./...
-✓ cd root-spine && go test ./...
+✓ grep -c 'create_spec' aethereum-spine/internal/mcp/server.go             # ≥ 1
+✓ grep -c 'finalize_spec' aethereum-spine/internal/mcp/server.go           # ≥ 1
+✓ grep -c 'CreateAssemblyLine' aethereum-spine/internal/grpc/server.go     # ≥ 1
+✓ grep -c 'UpdateSkill' aethereum-spine/internal/grpc/server.go            # ≥ 1
+✓ cd aethereum-spine && go build ./...
+✓ cd aethereum-spine && go test ./...
 ```
 
 **Phase 8 — Prolog Self-Enhancement Framework**
@@ -849,7 +849,7 @@ done
 All prior phase tests must pass before a new phase briefing is filed. No exceptions.
 
 ```bash
-cd root-spine   && go test ./...
+cd aethereum-spine   && go test ./...
 cd safety-rail  && cargo test --features tier1
 cd control-panel && npx vitest run
 ```
@@ -866,7 +866,7 @@ On your first invocation, `analyst-inbox/` will be empty. You are not waiting fo
 2. `observability/fitness-vector-schema.json` — complete global fitness vector schema per Section 5.
 3. `observability/schemas/log-schema.json` — structured log entry schema. Every field typed. Every field documented.
 4. `safety-rail/src/lib.rs` — the complete trait contract per Section 3, Phase 2. All supporting types fully defined.
-5. `root-spine/proto/orchestrator.proto` — complete Protobuf definitions per Section 3, Phase 3. All fields commented.
+5. `aethereum-spine/proto/orchestrator.proto` — complete Protobuf definitions per Section 3, Phase 3. All fields commented.
 6. `proposals/README.md` — documents the proposal lifecycle (pending → approved/rejected, amendment flow).
 7. `scripts/bootstrap.sh` — installs all toolchains, initializes PostgreSQL, starts OTel collector, verifies the environment is ready for Phase 2 implementation.
 8. A Phase 1 smoke test at `observability/tests/smoke_test.sh` that emits a synthetic fitness vector event and verifies it appears correctly in `otel-snapshots/latest.json`.

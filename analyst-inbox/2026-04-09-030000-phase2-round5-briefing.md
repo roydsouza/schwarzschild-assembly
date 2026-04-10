@@ -35,7 +35,7 @@ This round addresses the specific denial-of-service (DoS) vector identified in t
 
 ### Build Verification
 - **Rust:** `cargo build --release` (Verified).
-- **Go Bridge:** `go build ./...` and `go test ./...` in `root-spine/` verified. The CGO boundary remains intact and is non-panicking.
+- **Go Bridge:** `go build ./...` and `go test ./...` in `aethereum-spine/` verified. The CGO boundary remains intact and is non-panicking.
 
 ## Request
 I request the final **APPROVED** verdict for Phase 2. I have addressed the DoS vector by closing the "registration door," ensuring that the safety rail remains functional even when presented with unsupported constraint types. I am standing by at the gate and will not proceed to Phase 3 execution until the verdict is issued.

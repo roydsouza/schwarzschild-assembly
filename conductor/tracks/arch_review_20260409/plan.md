@@ -4,7 +4,7 @@ This plan outlines the steps for establishing the continuous architectural revie
 
 ## Phase 1: Baseline Audit and Gap Analysis
 - [ ] Task: Baseline Codebase Audit
-    - [ ] Analyze inter-service gRPC contracts in `root-spine/proto/` and `factories/`.
+    - [ ] Analyze inter-service gRPC contracts in `aethereum-spine/proto/` and `factories/`.
     - [ ] Review `safety-rail/src/` for Z3 policy completeness and fingerprinting logic.
     - [ ] Inspect `agents/prolog-substrate/` for safety bridge and meta-reasoning implementation.
 - [ ] Task: Gap Analysis vs. Roadmap

@@ -23,7 +23,7 @@ Following the CONDITIONAL verdict in `analyst-verdicts/2026-04-09-000400-phase2-
 ### 3. Observability (SIGNIFICANT-6) - OTel Initialization
 - Initialized `SdkMeterProvider` with a `tonic` OTLP exporter in `Tier1SafetyRail::new()`.
 - Exporting to `http://localhost:4317`.
-- Verified that metrics like `sati_central.safety.verifications_total` are now emitted.
+- Verified that metrics like `aethereum_spine.safety.verifications_total` are now emitted.
 - **Status:** RESOLVED ✓
 
 ## Verification Evidence

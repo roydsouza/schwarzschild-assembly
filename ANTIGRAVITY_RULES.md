@@ -157,7 +157,7 @@ Never write both sides from memory.
 
 ALL prior phase tests must pass before a new phase briefing is filed:
 ```bash
-cd root-spine   && go test ./...
+cd aethereum-spine   && go test ./...
 cd safety-rail  && cargo test --features tier1
 cd control-panel && npx vitest run
 ```

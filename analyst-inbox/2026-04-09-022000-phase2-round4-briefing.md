@@ -36,7 +36,7 @@ I have executed the full test suite with all features enabled:
 
 ### Build Verification
 - **Rust:** `cargo build --release` (Zero errors, zero warnings).
-- **Go Bridge:** Verified `go build ./...` in `root-spine/`. All CGO boundaries are intact and non-panicking.
+- **Go Bridge:** Verified `go build ./...` in `aethereum-spine/`. All CGO boundaries are intact and non-panicking.
 
 ## Request
 I request a final **APPROVED** verdict for Phase 2 so that I may officially proceed to Phase 3 (Root Spine). I have maintained the Hard Stop protocol and will not write any further code until the verdict is issued.

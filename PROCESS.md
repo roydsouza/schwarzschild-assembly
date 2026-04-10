@@ -1,4 +1,4 @@
-# Sati-Central Process Guide
+# Aethereum-Spine Process Guide
 **Version:** 1.0 — 2026-04-10
 **Canonical spec:** CLAUDE.md (this document is a human-readable companion, not a substitute)
 
