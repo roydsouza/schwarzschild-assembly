@@ -1,21 +1,41 @@
 # Infrastructure Artifacts (Transient)
-core-station/**/target/
-core-station/**/bin/
-docking-bays/
-output/
-build-artifacts/
-dry-dock-archives/*.tar.gz
+**/target/
+**/bin/
+**/build/
+**/dist/
+**/output/
+**/node_modules/
+**/docking-bays/
+**/build-artifacts/
+**/dry-dock-archives/*.tar.gz
+
+# Aethereum-Spine Binaries
+**/sati-central
+**/main
+**/safe-echo
+
+# General Binaries & Libraries
+*.exe
+*.bin
+*.dylib
+*.so
+*.a
+*.o
+*.obj
+*.rlib
+*.rmeta
+*.d
+*.timestamp
+CACHEDIR.TAG
 
 # Python
 **/__pycache__/
 **/*.py[cod]
 **/.venv/
 **/*.egg-info/
-**/dist/
 **/.pytest_cache/
 
 # Node.js
-**/node_modules/
 **/.next/
 
 # macOS
@@ -26,7 +46,7 @@ dry-dock-archives/*.tar.gz
 .envrc
 *.local
 
-# Protoplasm Runtime
+# Runtime Artifacts
 **/*.log
 **/*.pid
 
