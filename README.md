@@ -1,9 +1,9 @@
 # 🔘 Schwarzschild Assembly
 
-![Sati-Central Space Factory](file:///Users/rds/antigravity/schwarzschild-assembly/assets/hero.png)
+![Sati-Central Space Factory](assets/hero.png)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-**[📍 Project Roadmap](file:///Users/rds/antigravity/schwarzschild-assembly/CONTENTS.md)**
+**[📍 Project Roadmap](CONTENTS.md)**
 
 ---
 
