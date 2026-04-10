@@ -1,31 +1,34 @@
-# Rust build artifacts
-safety-rail/target/
-*/target/
+# Infrastructure Artifacts (Transient)
+core-station/**/target/
+core-station/**/bin/
+docking-bays/
+output/
+build-artifacts/
+dry-dock-archives/*.tar.gz
 
 # Python
-__pycache__/
-*.py[cod]
-.venv/
-*.egg-info/
-dist/
-.pytest_cache/
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/*.egg-info/
+**/dist/
+**/.pytest_cache/
 
 # Node.js
-control-panel/node_modules/
-.next/
+**/node_modules/
+**/.next/
 
-# Go build
-root-spine/bin/
-
-# OTel runtime files (written at runtime, not source artifacts)
-otel-snapshots/telemetry.jsonl
-otel-snapshots/collector.log
-otel-snapshots/collector.pid
+# macOS
+.DS_Store
 
 # Environment
 .env
 .envrc
 *.local
 
-# macOS
-.DS_Store
+# Protoplasm Runtime
+**/*.log
+**/*.pid
+
+# Git Hygiene
+.gitignore.lock
