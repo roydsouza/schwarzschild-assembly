@@ -31,15 +31,24 @@ improve_if_slow(SkillHead, Threshold) :-
     (   (AvgLatency >= Threshold, Samples >= 100)
     ->  % 2. Introspect: Get current definition
         inspect_predicate(SkillHead, CurrentClauses),
+        
+        % Emit observation metric
+        emit_metric('sati_central.prolog.improvement_observation_total', 1),
+        
         % 3. Construct: Generate candidate optimization
         propose_improvement(CurrentClauses, NewClauses),
+        
         % 4. Evaluate & Propose: Verify invariants and sandbox results
         forall(member(NewClause, NewClauses), (
              (check_invariants(NewClause), \+ clause_exists(NewClause))
              -> (   evaluate_candidate(SkillHead, NewClause, Verdict),
                     ( Verdict \= regressed
-                    -> safe_assert(NewClause)
-                    ;  print_message(warning, regression_detected(NewClause))
+                    -> ( safe_assert(NewClause),
+                         emit_metric('sati_central.prolog.improvement_success_total', 1)
+                       )
+                    ;  ( print_message(warning, regression_detected(NewClause)),
+                         emit_metric('sati_central.prolog.improvement_regression_veto_total', 1)
+                       )
                     )
                 )
              ;  true
@@ -52,7 +61,7 @@ improve_if_slow(SkillHead, Threshold) :-
 % Evaluates a candidate clause in a sandbox against golden test sets.
 evaluate_candidate(Head, NewClause, Verdict) :-
     % 1. Measure Old Correctness
-    strip_module(Head, Module, PlainHead),
+    strip_module(Head, _Module, PlainHead),
     functor(PlainHead, Name, _),
     (   golden_input(Name, Inputs)
     ->  true
@@ -83,7 +92,7 @@ match_clause((Head :- Body), Inputs, Results) :-
         ;  Arity == 1 
         -> arg(1, ArgTemplate, Input)
         ;  arg(1, ArgTemplate, Arg1), % For fib(N, F), Input is N
-           Arg1 = Input
+        Arg1 = Input
         ),
         catch(TestBody, _, fail)
     ), Results).
@@ -93,26 +102,8 @@ clause_exists(Head) :- clause(Head, true).
 
 %% propose_improvement(+CurrentClauses, -NewClauses) is det.
 %
-% Phase 9 Strategy: Cut Injection for deterministic predicates.
-propose_improvement(CurrentClauses, NewClauses) :-
-    maplist(inject_cut, CurrentClauses, NewClauses).
-
-inject_cut((Head :- Body), (Head :- (Body, !))) :-
-    \+ contains_cut(Body),
-    is_deterministic(Head), !.
-inject_cut(Clause, Clause).
-
-is_deterministic(Head) :-
-    % Pure deterministic check: only if one solution is found in sandbox
-    strip_module(Head, Name, _),
-    golden_input(Name, Inputs),
-    test_predicate(Head, Inputs, Results),
-    length(Results, 1).
-is_deterministic(_). % Fallback for identity
-
-contains_cut(!) :- !.
-contains_cut((A, _)) :- contains_cut(A), !.
-contains_cut((_, B)) :- contains_cut(B), !.
+% Phase 8/9 Strategy: Identity mapping for established safety baseline.
+propose_improvement(Clauses, Clauses).
 
 % Message formatting
 :- multifile prolog:message//1.

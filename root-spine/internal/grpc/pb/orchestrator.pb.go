@@ -524,6 +524,137 @@ func (VerdictDecision) EnumDescriptor() ([]byte, []int) {
 	return file_orchestrator_proto_rawDescGZIP(), []int{7}
 }
 
+// RequirementCategory enumerates types of requirements.
+type RequirementCategory int32
+
+const (
+	RequirementCategory_REQUIREMENT_UNSPECIFIED RequirementCategory = 0
+	RequirementCategory_REQUIREMENT_FUNCTIONAL  RequirementCategory = 1
+	RequirementCategory_REQUIREMENT_PERFORMANCE RequirementCategory = 2
+	RequirementCategory_REQUIREMENT_SECURITY    RequirementCategory = 3
+	RequirementCategory_REQUIREMENT_OPERATIONAL RequirementCategory = 4
+	RequirementCategory_REQUIREMENT_INTERFACE   RequirementCategory = 5
+)
+
+// Enum value maps for RequirementCategory.
+var (
+	RequirementCategory_name = map[int32]string{
+		0: "REQUIREMENT_UNSPECIFIED",
+		1: "REQUIREMENT_FUNCTIONAL",
+		2: "REQUIREMENT_PERFORMANCE",
+		3: "REQUIREMENT_SECURITY",
+		4: "REQUIREMENT_OPERATIONAL",
+		5: "REQUIREMENT_INTERFACE",
+	}
+	RequirementCategory_value = map[string]int32{
+		"REQUIREMENT_UNSPECIFIED": 0,
+		"REQUIREMENT_FUNCTIONAL":  1,
+		"REQUIREMENT_PERFORMANCE": 2,
+		"REQUIREMENT_SECURITY":    3,
+		"REQUIREMENT_OPERATIONAL": 4,
+		"REQUIREMENT_INTERFACE":   5,
+	}
+)
+
+func (x RequirementCategory) Enum() *RequirementCategory {
+	p := new(RequirementCategory)
+	*p = x
+	return p
+}
+
+func (x RequirementCategory) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RequirementCategory) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchestrator_proto_enumTypes[8].Descriptor()
+}
+
+func (RequirementCategory) Type() protoreflect.EnumType {
+	return &file_orchestrator_proto_enumTypes[8]
+}
+
+func (x RequirementCategory) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RequirementCategory.Descriptor instead.
+func (RequirementCategory) EnumDescriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{8}
+}
+
+// LifecycleState enumerates the gated states of an assembly line.
+type LifecycleState int32
+
+const (
+	LifecycleState_LIFECYCLE_UNSPECIFIED LifecycleState = 0
+	// INTAKE: requirements gathering (Requirements Advisor active).
+	LifecycleState_LIFECYCLE_INTAKE LifecycleState = 1
+	// DESIGN: spec finalized; awaiting Analyst Droid approval.
+	LifecycleState_LIFECYCLE_DESIGN LifecycleState = 2
+	// SCAFFOLD: initial code/tests generation (Scaffold Engine active).
+	LifecycleState_LIFECYCLE_SCAFFOLD LifecycleState = 3
+	// BUILD: service logic implementation (Worker active).
+	LifecycleState_LIFECYCLE_BUILD LifecycleState = 4
+	// VERIFY: quality assessment and criteria verification.
+	LifecycleState_LIFECYCLE_VERIFY LifecycleState = 5
+	// DELIVERED: service is operational and committed.
+	LifecycleState_LIFECYCLE_DELIVERED LifecycleState = 6
+	// ABANDONED: assembly line stopped before delivery.
+	LifecycleState_LIFECYCLE_ABANDONED LifecycleState = 7
+)
+
+// Enum value maps for LifecycleState.
+var (
+	LifecycleState_name = map[int32]string{
+		0: "LIFECYCLE_UNSPECIFIED",
+		1: "LIFECYCLE_INTAKE",
+		2: "LIFECYCLE_DESIGN",
+		3: "LIFECYCLE_SCAFFOLD",
+		4: "LIFECYCLE_BUILD",
+		5: "LIFECYCLE_VERIFY",
+		6: "LIFECYCLE_DELIVERED",
+		7: "LIFECYCLE_ABANDONED",
+	}
+	LifecycleState_value = map[string]int32{
+		"LIFECYCLE_UNSPECIFIED": 0,
+		"LIFECYCLE_INTAKE":      1,
+		"LIFECYCLE_DESIGN":      2,
+		"LIFECYCLE_SCAFFOLD":    3,
+		"LIFECYCLE_BUILD":       4,
+		"LIFECYCLE_VERIFY":      5,
+		"LIFECYCLE_DELIVERED":   6,
+		"LIFECYCLE_ABANDONED":   7,
+	}
+)
+
+func (x LifecycleState) Enum() *LifecycleState {
+	p := new(LifecycleState)
+	*p = x
+	return p
+}
+
+func (x LifecycleState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LifecycleState) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchestrator_proto_enumTypes[9].Descriptor()
+}
+
+func (LifecycleState) Type() protoreflect.EnumType {
+	return &file_orchestrator_proto_enumTypes[9]
+}
+
+func (x LifecycleState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LifecycleState.Descriptor instead.
+func (LifecycleState) EnumDescriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{9}
+}
+
 // Empty is used for RPCs that require no input.
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3060,6 +3191,708 @@ func (x *MetricReport) GetObservedAtMs() int64 {
 	return 0
 }
 
+// SpecDocument is the authoritative requirements document for a new service.
+// Built incrementally during the INTAKE phase via Requirements Advisor tools.
+type SpecDocument struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the UUIDv7 specimen identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// service_name is the human-readable slug for the service.
+	ServiceName string `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// description is a high-level summary of the service's purpose.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// requirements is the list of functional and non-functional requirements.
+	Requirements []*Requirement `protobuf:"bytes,4,rep,name=requirements,proto3" json:"requirements,omitempty"`
+	// challenges records Roy's responses to Analyst Droid architectural challenges.
+	Challenges []*ChallengeRecord `protobuf:"bytes,5,rep,name=challenges,proto3" json:"challenges,omitempty"`
+	// acceptance_criteria defines the testable benchmarks for DELIVERY.
+	AcceptanceCriteria []*AcceptanceCriterion `protobuf:"bytes,6,rep,name=acceptance_criteria,json=acceptanceCriteria,proto3" json:"acceptance_criteria,omitempty"`
+	// deployment_target specifies where the service will run.
+	DeploymentTarget *DeploymentTarget `protobuf:"bytes,7,opt,name=deployment_target,json=deploymentTarget,proto3" json:"deployment_target,omitempty"`
+	// primary_language is inferred or explicitly selected (Go, Rust, Python, etc.).
+	PrimaryLanguage string `protobuf:"bytes,8,opt,name=primary_language,json=primaryLanguage,proto3" json:"primary_language,omitempty"`
+	// is_finalized is true if Roy has called finalize_spec.
+	IsFinalized bool `protobuf:"varint,9,opt,name=is_finalized,json=isFinalized,proto3" json:"is_finalized,omitempty"`
+	// approved_at_ms is when the Analyst Droid issued an APPROVED verdict.
+	ApprovedAtMs  int64 `protobuf:"varint,10,opt,name=approved_at_ms,json=approvedAtMs,proto3" json:"approved_at_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpecDocument) Reset() {
+	*x = SpecDocument{}
+	mi := &file_orchestrator_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpecDocument) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpecDocument) ProtoMessage() {}
+
+func (x *SpecDocument) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpecDocument.ProtoReflect.Descriptor instead.
+func (*SpecDocument) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *SpecDocument) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SpecDocument) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *SpecDocument) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *SpecDocument) GetRequirements() []*Requirement {
+	if x != nil {
+		return x.Requirements
+	}
+	return nil
+}
+
+func (x *SpecDocument) GetChallenges() []*ChallengeRecord {
+	if x != nil {
+		return x.Challenges
+	}
+	return nil
+}
+
+func (x *SpecDocument) GetAcceptanceCriteria() []*AcceptanceCriterion {
+	if x != nil {
+		return x.AcceptanceCriteria
+	}
+	return nil
+}
+
+func (x *SpecDocument) GetDeploymentTarget() *DeploymentTarget {
+	if x != nil {
+		return x.DeploymentTarget
+	}
+	return nil
+}
+
+func (x *SpecDocument) GetPrimaryLanguage() string {
+	if x != nil {
+		return x.PrimaryLanguage
+	}
+	return ""
+}
+
+func (x *SpecDocument) GetIsFinalized() bool {
+	if x != nil {
+		return x.IsFinalized
+	}
+	return false
+}
+
+func (x *SpecDocument) GetApprovedAtMs() int64 {
+	if x != nil {
+		return x.ApprovedAtMs
+	}
+	return 0
+}
+
+// Requirement is a single unit of functionality or constraint.
+type Requirement struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the UUIDv7 for this requirement.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// text is the requirement description verbatim.
+	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	// category indicates the type of requirement.
+	Category      RequirementCategory `protobuf:"varint,3,opt,name=category,proto3,enum=sati.central.v1.RequirementCategory" json:"category,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Requirement) Reset() {
+	*x = Requirement{}
+	mi := &file_orchestrator_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Requirement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Requirement) ProtoMessage() {}
+
+func (x *Requirement) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Requirement.ProtoReflect.Descriptor instead.
+func (*Requirement) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *Requirement) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Requirement) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *Requirement) GetCategory() RequirementCategory {
+	if x != nil {
+		return x.Category
+	}
+	return RequirementCategory_REQUIREMENT_UNSPECIFIED
+}
+
+// ChallengeRecord captures Roy's architectural decisions.
+type ChallengeRecord struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the UUIDv7 for this record.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// challenge is the Analyst Droid's question or concern.
+	Challenge string `protobuf:"bytes,2,opt,name=challenge,proto3" json:"challenge,omitempty"`
+	// response is Roy's verbatim response.
+	Response      string `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChallengeRecord) Reset() {
+	*x = ChallengeRecord{}
+	mi := &file_orchestrator_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChallengeRecord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChallengeRecord) ProtoMessage() {}
+
+func (x *ChallengeRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChallengeRecord.ProtoReflect.Descriptor instead.
+func (*ChallengeRecord) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ChallengeRecord) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ChallengeRecord) GetChallenge() string {
+	if x != nil {
+		return x.Challenge
+	}
+	return ""
+}
+
+func (x *ChallengeRecord) GetResponse() string {
+	if x != nil {
+		return x.Response
+	}
+	return ""
+}
+
+// AcceptanceCriterion defines a testable goal.
+type AcceptanceCriterion struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the UUIDv7 for this criterion.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// text is the goal description.
+	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	// metric is the OTel metric ID used to verify this (optional).
+	Metric        string `protobuf:"bytes,3,opt,name=metric,proto3" json:"metric,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptanceCriterion) Reset() {
+	*x = AcceptanceCriterion{}
+	mi := &file_orchestrator_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptanceCriterion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptanceCriterion) ProtoMessage() {}
+
+func (x *AcceptanceCriterion) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptanceCriterion.ProtoReflect.Descriptor instead.
+func (*AcceptanceCriterion) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *AcceptanceCriterion) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AcceptanceCriterion) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *AcceptanceCriterion) GetMetric() string {
+	if x != nil {
+		return x.Metric
+	}
+	return ""
+}
+
+// DeploymentTarget describes the runtime environment.
+type DeploymentTarget struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// target_type: LOCAL | CONTAINER | AWS | GCP.
+	TargetType string `protobuf:"bytes,1,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	// config_json is target-specific configuration.
+	ConfigJson    []byte `protobuf:"bytes,2,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeploymentTarget) Reset() {
+	*x = DeploymentTarget{}
+	mi := &file_orchestrator_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeploymentTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeploymentTarget) ProtoMessage() {}
+
+func (x *DeploymentTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeploymentTarget.ProtoReflect.Descriptor instead.
+func (*DeploymentTarget) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *DeploymentTarget) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *DeploymentTarget) GetConfigJson() []byte {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return nil
+}
+
+// AssemblyLine represents a software service creation instance.
+type AssemblyLine struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the UUIDv7 for this assembly line.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// spec_id refers to the underlying SpecDocument.
+	SpecId string `protobuf:"bytes,2,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
+	// service_name matches the SpecDocument.service_name.
+	ServiceName string `protobuf:"bytes,3,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// current_state: INTAKE → DESIGN → SCAFFOLD → BUILD → VERIFY → DELIVERED.
+	CurrentState LifecycleState `protobuf:"varint,4,opt,name=current_state,json=currentState,proto3,enum=sati.central.v1.LifecycleState" json:"current_state,omitempty"`
+	// created_at_ms is the Unix inception timestamp.
+	CreatedAtMs int64 `protobuf:"varint,5,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	// last_pulse_ms is the last recorded pulse from the factory worker.
+	LastPulseMs   int64 `protobuf:"varint,6,opt,name=last_pulse_ms,json=lastPulseMs,proto3" json:"last_pulse_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssemblyLine) Reset() {
+	*x = AssemblyLine{}
+	mi := &file_orchestrator_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssemblyLine) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssemblyLine) ProtoMessage() {}
+
+func (x *AssemblyLine) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssemblyLine.ProtoReflect.Descriptor instead.
+func (*AssemblyLine) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *AssemblyLine) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AssemblyLine) GetSpecId() string {
+	if x != nil {
+		return x.SpecId
+	}
+	return ""
+}
+
+func (x *AssemblyLine) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *AssemblyLine) GetCurrentState() LifecycleState {
+	if x != nil {
+		return x.CurrentState
+	}
+	return LifecycleState_LIFECYCLE_UNSPECIFIED
+}
+
+func (x *AssemblyLine) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *AssemblyLine) GetLastPulseMs() int64 {
+	if x != nil {
+		return x.LastPulseMs
+	}
+	return 0
+}
+
+// AssemblyLineID uniquely identifies an assembly line.
+type AssemblyLineID struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssemblyLineID) Reset() {
+	*x = AssemblyLineID{}
+	mi := &file_orchestrator_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssemblyLineID) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssemblyLineID) ProtoMessage() {}
+
+func (x *AssemblyLineID) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssemblyLineID.ProtoReflect.Descriptor instead.
+func (*AssemblyLineID) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *AssemblyLineID) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+// LifecycleStatus wraps the LifecycleState enum for gRPC returns.
+type LifecycleStatus struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	State         LifecycleState         `protobuf:"varint,1,opt,name=state,proto3,enum=sati.central.v1.LifecycleState" json:"state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LifecycleStatus) Reset() {
+	*x = LifecycleStatus{}
+	mi := &file_orchestrator_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LifecycleStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LifecycleStatus) ProtoMessage() {}
+
+func (x *LifecycleStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LifecycleStatus.ProtoReflect.Descriptor instead.
+func (*LifecycleStatus) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *LifecycleStatus) GetState() LifecycleState {
+	if x != nil {
+		return x.State
+	}
+	return LifecycleState_LIFECYCLE_UNSPECIFIED
+}
+
+// LifecycleAdvance carries the instruction to move to a new state.
+type LifecycleAdvance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// assembly_line_id is the target instance.
+	AssemblyLineId string `protobuf:"bytes,1,opt,name=assembly_line_id,json=assemblyLineId,proto3" json:"assembly_line_id,omitempty"`
+	// target_state is the desired next state.
+	TargetState LifecycleState `protobuf:"varint,2,opt,name=target_state,json=targetState,proto3,enum=sati.central.v1.LifecycleState" json:"target_state,omitempty"`
+	// justification is the rationale for the transition.
+	Justification string `protobuf:"bytes,3,opt,name=justification,proto3" json:"justification,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LifecycleAdvance) Reset() {
+	*x = LifecycleAdvance{}
+	mi := &file_orchestrator_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LifecycleAdvance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LifecycleAdvance) ProtoMessage() {}
+
+func (x *LifecycleAdvance) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LifecycleAdvance.ProtoReflect.Descriptor instead.
+func (*LifecycleAdvance) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *LifecycleAdvance) GetAssemblyLineId() string {
+	if x != nil {
+		return x.AssemblyLineId
+	}
+	return ""
+}
+
+func (x *LifecycleAdvance) GetTargetState() LifecycleState {
+	if x != nil {
+		return x.TargetState
+	}
+	return LifecycleState_LIFECYCLE_UNSPECIFIED
+}
+
+func (x *LifecycleAdvance) GetJustification() string {
+	if x != nil {
+		return x.Justification
+	}
+	return ""
+}
+
+// SkillUpdateRequest proposes a new version of an agent's skill.
+type SkillUpdateRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// agent_id identifies the agent (e.g., "synthetic-analyst-01").
+	AgentId string `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	// skill_name is the identifier for the skill (e.g., "pali_retrieval").
+	SkillName string `protobuf:"bytes,2,opt,name=skill_name,json=skillName,proto3" json:"skill_name,omitempty"`
+	// current_version_hash is the SHA-256 hex of the skill currently in use.
+	CurrentVersionHash string `protobuf:"bytes,3,opt,name=current_version_hash,json=currentVersionHash,proto3" json:"current_version_hash,omitempty"`
+	// new_content is the proposed new skill content (code, prompt, or Prolog clauses).
+	NewContent []byte `protobuf:"bytes,4,opt,name=new_content,json=newContent,proto3" json:"new_content,omitempty"`
+	// rationale explains the improvement (or fix).
+	Rationale     string `protobuf:"bytes,5,opt,name=rationale,proto3" json:"rationale,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SkillUpdateRequest) Reset() {
+	*x = SkillUpdateRequest{}
+	mi := &file_orchestrator_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SkillUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SkillUpdateRequest) ProtoMessage() {}
+
+func (x *SkillUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SkillUpdateRequest.ProtoReflect.Descriptor instead.
+func (*SkillUpdateRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *SkillUpdateRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *SkillUpdateRequest) GetSkillName() string {
+	if x != nil {
+		return x.SkillName
+	}
+	return ""
+}
+
+func (x *SkillUpdateRequest) GetCurrentVersionHash() string {
+	if x != nil {
+		return x.CurrentVersionHash
+	}
+	return ""
+}
+
+func (x *SkillUpdateRequest) GetNewContent() []byte {
+	if x != nil {
+		return x.NewContent
+	}
+	return nil
+}
+
+func (x *SkillUpdateRequest) GetRationale() string {
+	if x != nil {
+		return x.Rationale
+	}
+	return ""
+}
+
 var File_orchestrator_proto protoreflect.FileDescriptor
 
 const file_orchestrator_proto_rawDesc = "" +
@@ -3281,7 +4114,61 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x0eobserved_at_ms\x18\x03 \x01(\x03R\fobservedAtMs\x1a:\n" +
 	"\fMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01*\x96\x01\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"\x82\x04\n" +
+	"\fSpecDocument\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
+	"\fservice_name\x18\x02 \x01(\tR\vserviceName\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12@\n" +
+	"\frequirements\x18\x04 \x03(\v2\x1c.sati.central.v1.RequirementR\frequirements\x12@\n" +
+	"\n" +
+	"challenges\x18\x05 \x03(\v2 .sati.central.v1.ChallengeRecordR\n" +
+	"challenges\x12U\n" +
+	"\x13acceptance_criteria\x18\x06 \x03(\v2$.sati.central.v1.AcceptanceCriterionR\x12acceptanceCriteria\x12N\n" +
+	"\x11deployment_target\x18\a \x01(\v2!.sati.central.v1.DeploymentTargetR\x10deploymentTarget\x12)\n" +
+	"\x10primary_language\x18\b \x01(\tR\x0fprimaryLanguage\x12!\n" +
+	"\fis_finalized\x18\t \x01(\bR\visFinalized\x12$\n" +
+	"\x0eapproved_at_ms\x18\n" +
+	" \x01(\x03R\fapprovedAtMs\"s\n" +
+	"\vRequirement\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12@\n" +
+	"\bcategory\x18\x03 \x01(\x0e2$.sati.central.v1.RequirementCategoryR\bcategory\"[\n" +
+	"\x0fChallengeRecord\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
+	"\tchallenge\x18\x02 \x01(\tR\tchallenge\x12\x1a\n" +
+	"\bresponse\x18\x03 \x01(\tR\bresponse\"Q\n" +
+	"\x13AcceptanceCriterion\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12\x16\n" +
+	"\x06metric\x18\x03 \x01(\tR\x06metric\"T\n" +
+	"\x10DeploymentTarget\x12\x1f\n" +
+	"\vtarget_type\x18\x01 \x01(\tR\n" +
+	"targetType\x12\x1f\n" +
+	"\vconfig_json\x18\x02 \x01(\fR\n" +
+	"configJson\"\xe8\x01\n" +
+	"\fAssemblyLine\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\aspec_id\x18\x02 \x01(\tR\x06specId\x12!\n" +
+	"\fservice_name\x18\x03 \x01(\tR\vserviceName\x12D\n" +
+	"\rcurrent_state\x18\x04 \x01(\x0e2\x1f.sati.central.v1.LifecycleStateR\fcurrentState\x12\"\n" +
+	"\rcreated_at_ms\x18\x05 \x01(\x03R\vcreatedAtMs\x12\"\n" +
+	"\rlast_pulse_ms\x18\x06 \x01(\x03R\vlastPulseMs\" \n" +
+	"\x0eAssemblyLineID\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"H\n" +
+	"\x0fLifecycleStatus\x125\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x1f.sati.central.v1.LifecycleStateR\x05state\"\xa6\x01\n" +
+	"\x10LifecycleAdvance\x12(\n" +
+	"\x10assembly_line_id\x18\x01 \x01(\tR\x0eassemblyLineId\x12B\n" +
+	"\ftarget_state\x18\x02 \x01(\x0e2\x1f.sati.central.v1.LifecycleStateR\vtargetState\x12$\n" +
+	"\rjustification\x18\x03 \x01(\tR\rjustification\"\xbf\x01\n" +
+	"\x12SkillUpdateRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1d\n" +
+	"\n" +
+	"skill_name\x18\x02 \x01(\tR\tskillName\x120\n" +
+	"\x14current_version_hash\x18\x03 \x01(\tR\x12currentVersionHash\x12\x1f\n" +
+	"\vnew_content\x18\x04 \x01(\fR\n" +
+	"newContent\x12\x1c\n" +
+	"\trationale\x18\x05 \x01(\tR\trationale*\x96\x01\n" +
 	"\fFactoryState\x12\x1d\n" +
 	"\x19FACTORY_STATE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10FACTORY_STARTING\x10\x01\x12\x13\n" +
@@ -3333,7 +4220,24 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x13VERDICT_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10VERDICT_APPROVED\x10\x01\x12\x12\n" +
 	"\x0eVERDICT_VETOED\x10\x02\x12\x17\n" +
-	"\x13VERDICT_CONDITIONAL\x10\x032\xf7\a\n" +
+	"\x13VERDICT_CONDITIONAL\x10\x03*\xbd\x01\n" +
+	"\x13RequirementCategory\x12\x1b\n" +
+	"\x17REQUIREMENT_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16REQUIREMENT_FUNCTIONAL\x10\x01\x12\x1b\n" +
+	"\x17REQUIREMENT_PERFORMANCE\x10\x02\x12\x18\n" +
+	"\x14REQUIREMENT_SECURITY\x10\x03\x12\x1b\n" +
+	"\x17REQUIREMENT_OPERATIONAL\x10\x04\x12\x19\n" +
+	"\x15REQUIREMENT_INTERFACE\x10\x05*\xcc\x01\n" +
+	"\x0eLifecycleState\x12\x19\n" +
+	"\x15LIFECYCLE_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10LIFECYCLE_INTAKE\x10\x01\x12\x14\n" +
+	"\x10LIFECYCLE_DESIGN\x10\x02\x12\x16\n" +
+	"\x12LIFECYCLE_SCAFFOLD\x10\x03\x12\x13\n" +
+	"\x0fLIFECYCLE_BUILD\x10\x04\x12\x14\n" +
+	"\x10LIFECYCLE_VERIFY\x10\x05\x12\x17\n" +
+	"\x13LIFECYCLE_DELIVERED\x10\x06\x12\x17\n" +
+	"\x13LIFECYCLE_ABANDONED\x10\a2\xd2\n" +
+	"\n" +
 	"\fOrchestrator\x12R\n" +
 	"\rCreateFactory\x12\x1f.sati.central.v1.FactoryRequest\x1a .sati.central.v1.FactoryResponse\x12K\n" +
 	"\vStopFactory\x12\x1a.sati.central.v1.FactoryID\x1a .sati.central.v1.OperationStatus\x12E\n" +
@@ -3347,7 +4251,11 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x10GetDhammaContext\x12\x1c.sati.central.v1.DataContext\x1a!.sati.central.v1.ReflectionResult\x12S\n" +
 	"\x14WriteAnalystBriefing\x12\x19.sati.central.v1.Briefing\x1a .sati.central.v1.OperationStatus\x12T\n" +
 	"\x12ReadAnalystVerdict\x12\x1d.sati.central.v1.VerdictQuery\x1a\x1f.sati.central.v1.AnalystVerdict\x12P\n" +
-	"\rReportMetrics\x12\x1d.sati.central.v1.MetricReport\x1a .sati.central.v1.OperationStatusB<Z:github.com/rds/sati-central/root-spine/internal/grpc/pb;pbb\x06proto3"
+	"\rReportMetrics\x12\x1d.sati.central.v1.MetricReport\x1a .sati.central.v1.OperationStatus\x12R\n" +
+	"\x12CreateAssemblyLine\x12\x1d.sati.central.v1.SpecDocument\x1a\x1d.sati.central.v1.AssemblyLine\x12Z\n" +
+	"\x15GetAssemblyLineStatus\x12\x1f.sati.central.v1.AssemblyLineID\x1a .sati.central.v1.LifecycleStatus\x12W\n" +
+	"\x10AdvanceLifecycle\x12!.sati.central.v1.LifecycleAdvance\x1a .sati.central.v1.LifecycleStatus\x12P\n" +
+	"\vUpdateSkill\x12#.sati.central.v1.SkillUpdateRequest\x1a\x1c.sati.central.v1.MerkleProofB<Z:github.com/rds/sati-central/root-spine/internal/grpc/pb;pbb\x06proto3"
 
 var (
 	file_orchestrator_proto_rawDescOnce sync.Once
@@ -3361,8 +4269,8 @@ func file_orchestrator_proto_rawDescGZIP() []byte {
 	return file_orchestrator_proto_rawDescData
 }
 
-var file_orchestrator_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_orchestrator_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_orchestrator_proto_goTypes = []any{
 	(FactoryState)(0),               // 0: sati.central.v1.FactoryState
 	(VerificationEventType)(0),      // 1: sati.central.v1.VerificationEventType
@@ -3372,107 +4280,135 @@ var file_orchestrator_proto_goTypes = []any{
 	(ThresholdOperator)(0),          // 5: sati.central.v1.ThresholdOperator
 	(MoralRoot)(0),                  // 6: sati.central.v1.MoralRoot
 	(VerdictDecision)(0),            // 7: sati.central.v1.VerdictDecision
-	(*Empty)(nil),                   // 8: sati.central.v1.Empty
-	(*OperationStatus)(nil),         // 9: sati.central.v1.OperationStatus
-	(*FactoryRequest)(nil),          // 10: sati.central.v1.FactoryRequest
-	(*FactoryResponse)(nil),         // 11: sati.central.v1.FactoryResponse
-	(*FactoryID)(nil),               // 12: sati.central.v1.FactoryID
-	(*FactoryStatus)(nil),           // 13: sati.central.v1.FactoryStatus
-	(*FactoryList)(nil),             // 14: sati.central.v1.FactoryList
-	(*FactoryEntry)(nil),            // 15: sati.central.v1.FactoryEntry
-	(*ActionProposal)(nil),          // 16: sati.central.v1.ActionProposal
-	(*VerificationEvent)(nil),       // 17: sati.central.v1.VerificationEvent
-	(*SafeResult)(nil),              // 18: sati.central.v1.SafeResult
-	(*UnsafeResult)(nil),            // 19: sati.central.v1.UnsafeResult
-	(*ErrorResult)(nil),             // 20: sati.central.v1.ErrorResult
-	(*ApprovalRequest)(nil),         // 21: sati.central.v1.ApprovalRequest
-	(*MerkleProof)(nil),             // 22: sati.central.v1.MerkleProof
-	(*VetoRequest)(nil),             // 23: sati.central.v1.VetoRequest
-	(*FitnessSnapshot)(nil),         // 24: sati.central.v1.FitnessSnapshot
-	(*FitnessMetrics)(nil),          // 25: sati.central.v1.FitnessMetrics
-	(*MetricValue)(nil),             // 26: sati.central.v1.MetricValue
-	(*CompositeMetricValue)(nil),    // 27: sati.central.v1.CompositeMetricValue
-	(*DomainMetricValue)(nil),       // 28: sati.central.v1.DomainMetricValue
-	(*DomainFitnessExtension)(nil),  // 29: sati.central.v1.DomainFitnessExtension
-	(*DomainMetricDeclaration)(nil), // 30: sati.central.v1.DomainMetricDeclaration
-	(*DataContext)(nil),             // 31: sati.central.v1.DataContext
-	(*ReflectionResult)(nil),        // 32: sati.central.v1.ReflectionResult
-	(*MoralWeighting)(nil),          // 33: sati.central.v1.MoralWeighting
-	(*BIlaraSegment)(nil),           // 34: sati.central.v1.BIlaraSegment
-	(*Briefing)(nil),                // 35: sati.central.v1.Briefing
-	(*VerdictQuery)(nil),            // 36: sati.central.v1.VerdictQuery
-	(*AnalystVerdict)(nil),          // 37: sati.central.v1.AnalystVerdict
-	(*RegistrationResult)(nil),      // 38: sati.central.v1.RegistrationResult
-	(*MetricReport)(nil),            // 39: sati.central.v1.MetricReport
-	nil,                             // 40: sati.central.v1.UnsafeResult.ViolationDetailsEntry
-	nil,                             // 41: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
-	nil,                             // 42: sati.central.v1.CompositeMetricValue.SubMetricsEntry
-	nil,                             // 43: sati.central.v1.MetricReport.MetricsEntry
+	(RequirementCategory)(0),        // 8: sati.central.v1.RequirementCategory
+	(LifecycleState)(0),             // 9: sati.central.v1.LifecycleState
+	(*Empty)(nil),                   // 10: sati.central.v1.Empty
+	(*OperationStatus)(nil),         // 11: sati.central.v1.OperationStatus
+	(*FactoryRequest)(nil),          // 12: sati.central.v1.FactoryRequest
+	(*FactoryResponse)(nil),         // 13: sati.central.v1.FactoryResponse
+	(*FactoryID)(nil),               // 14: sati.central.v1.FactoryID
+	(*FactoryStatus)(nil),           // 15: sati.central.v1.FactoryStatus
+	(*FactoryList)(nil),             // 16: sati.central.v1.FactoryList
+	(*FactoryEntry)(nil),            // 17: sati.central.v1.FactoryEntry
+	(*ActionProposal)(nil),          // 18: sati.central.v1.ActionProposal
+	(*VerificationEvent)(nil),       // 19: sati.central.v1.VerificationEvent
+	(*SafeResult)(nil),              // 20: sati.central.v1.SafeResult
+	(*UnsafeResult)(nil),            // 21: sati.central.v1.UnsafeResult
+	(*ErrorResult)(nil),             // 22: sati.central.v1.ErrorResult
+	(*ApprovalRequest)(nil),         // 23: sati.central.v1.ApprovalRequest
+	(*MerkleProof)(nil),             // 24: sati.central.v1.MerkleProof
+	(*VetoRequest)(nil),             // 25: sati.central.v1.VetoRequest
+	(*FitnessSnapshot)(nil),         // 26: sati.central.v1.FitnessSnapshot
+	(*FitnessMetrics)(nil),          // 27: sati.central.v1.FitnessMetrics
+	(*MetricValue)(nil),             // 28: sati.central.v1.MetricValue
+	(*CompositeMetricValue)(nil),    // 29: sati.central.v1.CompositeMetricValue
+	(*DomainMetricValue)(nil),       // 30: sati.central.v1.DomainMetricValue
+	(*DomainFitnessExtension)(nil),  // 31: sati.central.v1.DomainFitnessExtension
+	(*DomainMetricDeclaration)(nil), // 32: sati.central.v1.DomainMetricDeclaration
+	(*DataContext)(nil),             // 33: sati.central.v1.DataContext
+	(*ReflectionResult)(nil),        // 34: sati.central.v1.ReflectionResult
+	(*MoralWeighting)(nil),          // 35: sati.central.v1.MoralWeighting
+	(*BIlaraSegment)(nil),           // 36: sati.central.v1.BIlaraSegment
+	(*Briefing)(nil),                // 37: sati.central.v1.Briefing
+	(*VerdictQuery)(nil),            // 38: sati.central.v1.VerdictQuery
+	(*AnalystVerdict)(nil),          // 39: sati.central.v1.AnalystVerdict
+	(*RegistrationResult)(nil),      // 40: sati.central.v1.RegistrationResult
+	(*MetricReport)(nil),            // 41: sati.central.v1.MetricReport
+	(*SpecDocument)(nil),            // 42: sati.central.v1.SpecDocument
+	(*Requirement)(nil),             // 43: sati.central.v1.Requirement
+	(*ChallengeRecord)(nil),         // 44: sati.central.v1.ChallengeRecord
+	(*AcceptanceCriterion)(nil),     // 45: sati.central.v1.AcceptanceCriterion
+	(*DeploymentTarget)(nil),        // 46: sati.central.v1.DeploymentTarget
+	(*AssemblyLine)(nil),            // 47: sati.central.v1.AssemblyLine
+	(*AssemblyLineID)(nil),          // 48: sati.central.v1.AssemblyLineID
+	(*LifecycleStatus)(nil),         // 49: sati.central.v1.LifecycleStatus
+	(*LifecycleAdvance)(nil),        // 50: sati.central.v1.LifecycleAdvance
+	(*SkillUpdateRequest)(nil),      // 51: sati.central.v1.SkillUpdateRequest
+	nil,                             // 52: sati.central.v1.UnsafeResult.ViolationDetailsEntry
+	nil,                             // 53: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
+	nil,                             // 54: sati.central.v1.CompositeMetricValue.SubMetricsEntry
+	nil,                             // 55: sati.central.v1.MetricReport.MetricsEntry
 }
 var file_orchestrator_proto_depIdxs = []int32{
-	29, // 0: sati.central.v1.FactoryRequest.domain_metrics:type_name -> sati.central.v1.DomainFitnessExtension
-	12, // 1: sati.central.v1.FactoryResponse.factory_id:type_name -> sati.central.v1.FactoryID
-	13, // 2: sati.central.v1.FactoryResponse.status:type_name -> sati.central.v1.FactoryStatus
-	24, // 3: sati.central.v1.FactoryResponse.fitness_baseline:type_name -> sati.central.v1.FitnessSnapshot
+	31, // 0: sati.central.v1.FactoryRequest.domain_metrics:type_name -> sati.central.v1.DomainFitnessExtension
+	14, // 1: sati.central.v1.FactoryResponse.factory_id:type_name -> sati.central.v1.FactoryID
+	15, // 2: sati.central.v1.FactoryResponse.status:type_name -> sati.central.v1.FactoryStatus
+	26, // 3: sati.central.v1.FactoryResponse.fitness_baseline:type_name -> sati.central.v1.FitnessSnapshot
 	0,  // 4: sati.central.v1.FactoryStatus.state:type_name -> sati.central.v1.FactoryState
-	15, // 5: sati.central.v1.FactoryList.factories:type_name -> sati.central.v1.FactoryEntry
-	12, // 6: sati.central.v1.FactoryEntry.factory_id:type_name -> sati.central.v1.FactoryID
-	13, // 7: sati.central.v1.FactoryEntry.status:type_name -> sati.central.v1.FactoryStatus
+	17, // 5: sati.central.v1.FactoryList.factories:type_name -> sati.central.v1.FactoryEntry
+	14, // 6: sati.central.v1.FactoryEntry.factory_id:type_name -> sati.central.v1.FactoryID
+	15, // 7: sati.central.v1.FactoryEntry.status:type_name -> sati.central.v1.FactoryStatus
 	1,  // 8: sati.central.v1.VerificationEvent.event_type:type_name -> sati.central.v1.VerificationEventType
-	18, // 9: sati.central.v1.VerificationEvent.safe_result:type_name -> sati.central.v1.SafeResult
-	19, // 10: sati.central.v1.VerificationEvent.unsafe_result:type_name -> sati.central.v1.UnsafeResult
-	20, // 11: sati.central.v1.VerificationEvent.error_result:type_name -> sati.central.v1.ErrorResult
+	20, // 9: sati.central.v1.VerificationEvent.safe_result:type_name -> sati.central.v1.SafeResult
+	21, // 10: sati.central.v1.VerificationEvent.unsafe_result:type_name -> sati.central.v1.UnsafeResult
+	22, // 11: sati.central.v1.VerificationEvent.error_result:type_name -> sati.central.v1.ErrorResult
 	2,  // 12: sati.central.v1.SafeResult.proof_tier:type_name -> sati.central.v1.SafetyTierProto
-	40, // 13: sati.central.v1.UnsafeResult.violation_details:type_name -> sati.central.v1.UnsafeResult.ViolationDetailsEntry
-	25, // 14: sati.central.v1.FitnessSnapshot.metrics:type_name -> sati.central.v1.FitnessMetrics
-	41, // 15: sati.central.v1.FitnessSnapshot.domain_extensions:type_name -> sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
-	26, // 16: sati.central.v1.FitnessMetrics.safety_compliance:type_name -> sati.central.v1.MetricValue
-	26, // 17: sati.central.v1.FitnessMetrics.audit_integrity:type_name -> sati.central.v1.MetricValue
-	26, // 18: sati.central.v1.FitnessMetrics.dhamma_alignment:type_name -> sati.central.v1.MetricValue
-	27, // 19: sati.central.v1.FitnessMetrics.system_performance:type_name -> sati.central.v1.CompositeMetricValue
-	26, // 20: sati.central.v1.FitnessMetrics.operational_cost:type_name -> sati.central.v1.MetricValue
+	52, // 13: sati.central.v1.UnsafeResult.violation_details:type_name -> sati.central.v1.UnsafeResult.ViolationDetailsEntry
+	27, // 14: sati.central.v1.FitnessSnapshot.metrics:type_name -> sati.central.v1.FitnessMetrics
+	53, // 15: sati.central.v1.FitnessSnapshot.domain_extensions:type_name -> sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
+	28, // 16: sati.central.v1.FitnessMetrics.safety_compliance:type_name -> sati.central.v1.MetricValue
+	28, // 17: sati.central.v1.FitnessMetrics.audit_integrity:type_name -> sati.central.v1.MetricValue
+	28, // 18: sati.central.v1.FitnessMetrics.dhamma_alignment:type_name -> sati.central.v1.MetricValue
+	29, // 19: sati.central.v1.FitnessMetrics.system_performance:type_name -> sati.central.v1.CompositeMetricValue
+	28, // 20: sati.central.v1.FitnessMetrics.operational_cost:type_name -> sati.central.v1.MetricValue
 	3,  // 21: sati.central.v1.MetricValue.status:type_name -> sati.central.v1.MetricStatus
-	42, // 22: sati.central.v1.CompositeMetricValue.sub_metrics:type_name -> sati.central.v1.CompositeMetricValue.SubMetricsEntry
+	54, // 22: sati.central.v1.CompositeMetricValue.sub_metrics:type_name -> sati.central.v1.CompositeMetricValue.SubMetricsEntry
 	3,  // 23: sati.central.v1.CompositeMetricValue.status:type_name -> sati.central.v1.MetricStatus
 	3,  // 24: sati.central.v1.DomainMetricValue.status:type_name -> sati.central.v1.MetricStatus
-	30, // 25: sati.central.v1.DomainFitnessExtension.metrics:type_name -> sati.central.v1.DomainMetricDeclaration
+	32, // 25: sati.central.v1.DomainFitnessExtension.metrics:type_name -> sati.central.v1.DomainMetricDeclaration
 	4,  // 26: sati.central.v1.DomainMetricDeclaration.direction:type_name -> sati.central.v1.MetricDirection
 	5,  // 27: sati.central.v1.DomainMetricDeclaration.escalation_operator:type_name -> sati.central.v1.ThresholdOperator
-	33, // 28: sati.central.v1.ReflectionResult.moral_weighting:type_name -> sati.central.v1.MoralWeighting
-	34, // 29: sati.central.v1.ReflectionResult.retrieved_segments:type_name -> sati.central.v1.BIlaraSegment
+	35, // 28: sati.central.v1.ReflectionResult.moral_weighting:type_name -> sati.central.v1.MoralWeighting
+	36, // 29: sati.central.v1.ReflectionResult.retrieved_segments:type_name -> sati.central.v1.BIlaraSegment
 	6,  // 30: sati.central.v1.MoralWeighting.root:type_name -> sati.central.v1.MoralRoot
 	7,  // 31: sati.central.v1.AnalystVerdict.verdict:type_name -> sati.central.v1.VerdictDecision
-	43, // 32: sati.central.v1.MetricReport.metrics:type_name -> sati.central.v1.MetricReport.MetricsEntry
-	28, // 33: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry.value:type_name -> sati.central.v1.DomainMetricValue
-	10, // 34: sati.central.v1.Orchestrator.CreateFactory:input_type -> sati.central.v1.FactoryRequest
-	12, // 35: sati.central.v1.Orchestrator.StopFactory:input_type -> sati.central.v1.FactoryID
-	8,  // 36: sati.central.v1.Orchestrator.ListFactories:input_type -> sati.central.v1.Empty
-	16, // 37: sati.central.v1.Orchestrator.SubmitProposal:input_type -> sati.central.v1.ActionProposal
-	21, // 38: sati.central.v1.Orchestrator.ApproveAction:input_type -> sati.central.v1.ApprovalRequest
-	23, // 39: sati.central.v1.Orchestrator.VetoAction:input_type -> sati.central.v1.VetoRequest
-	8,  // 40: sati.central.v1.Orchestrator.GetFitnessSnapshot:input_type -> sati.central.v1.Empty
-	29, // 41: sati.central.v1.Orchestrator.RegisterDomainMetrics:input_type -> sati.central.v1.DomainFitnessExtension
-	31, // 42: sati.central.v1.Orchestrator.GetDhammaContext:input_type -> sati.central.v1.DataContext
-	35, // 43: sati.central.v1.Orchestrator.WriteAnalystBriefing:input_type -> sati.central.v1.Briefing
-	36, // 44: sati.central.v1.Orchestrator.ReadAnalystVerdict:input_type -> sati.central.v1.VerdictQuery
-	39, // 45: sati.central.v1.Orchestrator.ReportMetrics:input_type -> sati.central.v1.MetricReport
-	11, // 46: sati.central.v1.Orchestrator.CreateFactory:output_type -> sati.central.v1.FactoryResponse
-	9,  // 47: sati.central.v1.Orchestrator.StopFactory:output_type -> sati.central.v1.OperationStatus
-	14, // 48: sati.central.v1.Orchestrator.ListFactories:output_type -> sati.central.v1.FactoryList
-	17, // 49: sati.central.v1.Orchestrator.SubmitProposal:output_type -> sati.central.v1.VerificationEvent
-	22, // 50: sati.central.v1.Orchestrator.ApproveAction:output_type -> sati.central.v1.MerkleProof
-	9,  // 51: sati.central.v1.Orchestrator.VetoAction:output_type -> sati.central.v1.OperationStatus
-	24, // 52: sati.central.v1.Orchestrator.GetFitnessSnapshot:output_type -> sati.central.v1.FitnessSnapshot
-	38, // 53: sati.central.v1.Orchestrator.RegisterDomainMetrics:output_type -> sati.central.v1.RegistrationResult
-	32, // 54: sati.central.v1.Orchestrator.GetDhammaContext:output_type -> sati.central.v1.ReflectionResult
-	9,  // 55: sati.central.v1.Orchestrator.WriteAnalystBriefing:output_type -> sati.central.v1.OperationStatus
-	37, // 56: sati.central.v1.Orchestrator.ReadAnalystVerdict:output_type -> sati.central.v1.AnalystVerdict
-	9,  // 57: sati.central.v1.Orchestrator.ReportMetrics:output_type -> sati.central.v1.OperationStatus
-	46, // [46:58] is the sub-list for method output_type
-	34, // [34:46] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	55, // 32: sati.central.v1.MetricReport.metrics:type_name -> sati.central.v1.MetricReport.MetricsEntry
+	43, // 33: sati.central.v1.SpecDocument.requirements:type_name -> sati.central.v1.Requirement
+	44, // 34: sati.central.v1.SpecDocument.challenges:type_name -> sati.central.v1.ChallengeRecord
+	45, // 35: sati.central.v1.SpecDocument.acceptance_criteria:type_name -> sati.central.v1.AcceptanceCriterion
+	46, // 36: sati.central.v1.SpecDocument.deployment_target:type_name -> sati.central.v1.DeploymentTarget
+	8,  // 37: sati.central.v1.Requirement.category:type_name -> sati.central.v1.RequirementCategory
+	9,  // 38: sati.central.v1.AssemblyLine.current_state:type_name -> sati.central.v1.LifecycleState
+	9,  // 39: sati.central.v1.LifecycleStatus.state:type_name -> sati.central.v1.LifecycleState
+	9,  // 40: sati.central.v1.LifecycleAdvance.target_state:type_name -> sati.central.v1.LifecycleState
+	30, // 41: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry.value:type_name -> sati.central.v1.DomainMetricValue
+	12, // 42: sati.central.v1.Orchestrator.CreateFactory:input_type -> sati.central.v1.FactoryRequest
+	14, // 43: sati.central.v1.Orchestrator.StopFactory:input_type -> sati.central.v1.FactoryID
+	10, // 44: sati.central.v1.Orchestrator.ListFactories:input_type -> sati.central.v1.Empty
+	18, // 45: sati.central.v1.Orchestrator.SubmitProposal:input_type -> sati.central.v1.ActionProposal
+	23, // 46: sati.central.v1.Orchestrator.ApproveAction:input_type -> sati.central.v1.ApprovalRequest
+	25, // 47: sati.central.v1.Orchestrator.VetoAction:input_type -> sati.central.v1.VetoRequest
+	10, // 48: sati.central.v1.Orchestrator.GetFitnessSnapshot:input_type -> sati.central.v1.Empty
+	31, // 49: sati.central.v1.Orchestrator.RegisterDomainMetrics:input_type -> sati.central.v1.DomainFitnessExtension
+	33, // 50: sati.central.v1.Orchestrator.GetDhammaContext:input_type -> sati.central.v1.DataContext
+	37, // 51: sati.central.v1.Orchestrator.WriteAnalystBriefing:input_type -> sati.central.v1.Briefing
+	38, // 52: sati.central.v1.Orchestrator.ReadAnalystVerdict:input_type -> sati.central.v1.VerdictQuery
+	41, // 53: sati.central.v1.Orchestrator.ReportMetrics:input_type -> sati.central.v1.MetricReport
+	42, // 54: sati.central.v1.Orchestrator.CreateAssemblyLine:input_type -> sati.central.v1.SpecDocument
+	48, // 55: sati.central.v1.Orchestrator.GetAssemblyLineStatus:input_type -> sati.central.v1.AssemblyLineID
+	50, // 56: sati.central.v1.Orchestrator.AdvanceLifecycle:input_type -> sati.central.v1.LifecycleAdvance
+	51, // 57: sati.central.v1.Orchestrator.UpdateSkill:input_type -> sati.central.v1.SkillUpdateRequest
+	13, // 58: sati.central.v1.Orchestrator.CreateFactory:output_type -> sati.central.v1.FactoryResponse
+	11, // 59: sati.central.v1.Orchestrator.StopFactory:output_type -> sati.central.v1.OperationStatus
+	16, // 60: sati.central.v1.Orchestrator.ListFactories:output_type -> sati.central.v1.FactoryList
+	19, // 61: sati.central.v1.Orchestrator.SubmitProposal:output_type -> sati.central.v1.VerificationEvent
+	24, // 62: sati.central.v1.Orchestrator.ApproveAction:output_type -> sati.central.v1.MerkleProof
+	11, // 63: sati.central.v1.Orchestrator.VetoAction:output_type -> sati.central.v1.OperationStatus
+	26, // 64: sati.central.v1.Orchestrator.GetFitnessSnapshot:output_type -> sati.central.v1.FitnessSnapshot
+	40, // 65: sati.central.v1.Orchestrator.RegisterDomainMetrics:output_type -> sati.central.v1.RegistrationResult
+	34, // 66: sati.central.v1.Orchestrator.GetDhammaContext:output_type -> sati.central.v1.ReflectionResult
+	11, // 67: sati.central.v1.Orchestrator.WriteAnalystBriefing:output_type -> sati.central.v1.OperationStatus
+	39, // 68: sati.central.v1.Orchestrator.ReadAnalystVerdict:output_type -> sati.central.v1.AnalystVerdict
+	11, // 69: sati.central.v1.Orchestrator.ReportMetrics:output_type -> sati.central.v1.OperationStatus
+	47, // 70: sati.central.v1.Orchestrator.CreateAssemblyLine:output_type -> sati.central.v1.AssemblyLine
+	49, // 71: sati.central.v1.Orchestrator.GetAssemblyLineStatus:output_type -> sati.central.v1.LifecycleStatus
+	49, // 72: sati.central.v1.Orchestrator.AdvanceLifecycle:output_type -> sati.central.v1.LifecycleStatus
+	24, // 73: sati.central.v1.Orchestrator.UpdateSkill:output_type -> sati.central.v1.MerkleProof
+	58, // [58:74] is the sub-list for method output_type
+	42, // [42:58] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_orchestrator_proto_init() }
@@ -3495,8 +4431,8 @@ func file_orchestrator_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchestrator_proto_rawDesc), len(file_orchestrator_proto_rawDesc)),
-			NumEnums:      8,
-			NumMessages:   36,
+			NumEnums:      10,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -112,6 +112,19 @@ impl Tier1SafetyRail {
             author: "analyst-droid".to_string(),
             authored_at_ms: 1775680800002,
         });
+
+        let _ = self.z3_engine.add_constraint(PolicyConstraint {
+            id: ConstraintId::new([4u8; 16]),
+            name: "safety_no_prolog_injection".to_string(),
+            assertion: crate::ConstraintAssertion::SmtLib2(
+                "(=> (= target_component \"prolog-substrate\") (and (not (str.contains payload_content \"shell(\")) (not (str.contains payload_content \"system(\"))))".to_string(),
+            ),
+            category: crate::ConstraintCategory::SafetyCompliance,
+            severity: crate::ConstraintSeverity::Mandatory,
+            justification: "Autonomous knowledge evolution must not use OS-level shell or unauthorized mutation predicates".to_string(),
+            author: "analyst-droid".to_string(),
+            authored_at_ms: 1775754600000,
+        });
     }
 }
 
@@ -246,6 +259,7 @@ impl SafetyRail for Tier1SafetyRail {
             "safety_no_self_modify_safety_rail",
             "audit_no_merkle_deletion",
             "security_no_unverified_proto_change",
+            "safety_no_prolog_injection",
         ];
         if !SUPPORTED_CONSTRAINT_NAMES.contains(&constraint.name.as_str()) {
             return crate::RegistrationResult::UnsupportedAssertionKind {

@@ -13,6 +13,7 @@ pub(crate) struct ProposalFacts {
     pub agent_id: String,
     pub operation_type: OperationType,
     pub target_component: String,
+    pub payload_content: String,
 }
 
 /// Canonical schema for ActionProposal.payload.
@@ -150,6 +151,31 @@ impl Z3PolicyEngine {
                         let is_prefix = prefix.prefix(&vars.target_path);
                         solver.assert(&is_prefix.implies(&vars.is_security_adjacent));
                     }
+                    "safety_no_prolog_injection" => {
+                        let prolog_comp = Z3String::from_str(&ctx, "prolog-substrate").expect("Z3 string");
+                        let is_prolog = vars.target_component._eq(&prolog_comp);
+                        
+                        // Banned predicates: shell(, system(, assert(, assertz(, retract(, abolish(
+                        let shell_str = Z3String::from_str(&ctx, "shell(").expect("Z3 string");
+                        let system_str = Z3String::from_str(&ctx, "system(").expect("Z3 string");
+                        let assert_str = Z3String::from_str(&ctx, "assert(").expect("Z3 string");
+                        let assertz_str = Z3String::from_str(&ctx, "assertz(").expect("Z3 string");
+                        let retract_str = Z3String::from_str(&ctx, "retract(").expect("Z3 string");
+                        let abolish_str = Z3String::from_str(&ctx, "abolish(").expect("Z3 string");
+
+                        let has_shell = vars.payload_content.contains(&shell_str);
+                        let has_system = vars.payload_content.contains(&system_str);
+                        let has_assert = vars.payload_content.contains(&assert_str);
+                        let has_assertz = vars.payload_content.contains(&assertz_str);
+                        let has_retract = vars.payload_content.contains(&retract_str);
+                        let has_abolish = vars.payload_content.contains(&abolish_str);
+
+                        let is_unsafe = Bool::or(&ctx, &[
+                            &has_shell, &has_system, &has_assert, &has_assertz, &has_retract, &has_abolish
+                        ]);
+
+                        solver.assert(&is_prolog.implies(&is_unsafe.not()));
+                    }
                     _ => {
                         return Err(format!(
                             "Invariant violated: constraint '{}' reached verify() but was not filtered at registration",
@@ -174,6 +200,9 @@ impl Z3PolicyEngine {
         
         let target_comp_val = Z3String::from_str(&ctx, &facts.target_component).map_err(|e| e.to_string())?;
         solver.assert(&vars.target_component._eq(&target_comp_val));
+
+        let payload_content_val = Z3String::from_str(&ctx, &facts.payload_content).map_err(|e| e.to_string())?;
+        solver.assert(&vars.payload_content._eq(&payload_content_val));
 
         let result = solver.check();
 
@@ -213,6 +242,7 @@ impl Z3PolicyEngine {
             target_component: Z3String::new_const(ctx, "target_component"),
             is_security_adjacent: Bool::new_const(ctx, "is_security_adjacent"),
             agent_id: Z3String::new_const(ctx, "agent_id"),
+            payload_content: Z3String::new_const(ctx, "payload_content"),
         }
     }
 }
@@ -223,6 +253,7 @@ struct Z3FactsVars<'ctx> {
     agent_id: Z3String<'ctx>,
     operation_type: Z3String<'ctx>,
     target_component: Z3String<'ctx>,
+    payload_content: Z3String<'ctx>,
 }
 
 pub(crate) fn extract_facts(proposal: &ActionProposal) -> Result<ProposalFacts, String> {
@@ -235,6 +266,16 @@ pub(crate) fn extract_facts(proposal: &ActionProposal) -> Result<ProposalFacts, 
         agent_id: proposal.agent_id.clone(),
         operation_type: payload.operation_type,
         target_component: payload.target_component,
+        payload_content: match payload.context {
+            Some(serde_json::Value::String(s)) => {
+                println!("[DEBUG] Found context string: {}", s);
+                s
+            },
+            _ => {
+                println!("[DEBUG] Context is not a string or missing");
+                String::new()
+            },
+        },
     })
 }
 

@@ -16,7 +16,7 @@ func NewCollector(factoryID string) *Collector {
 	return &Collector{factoryID: factoryID}
 }
 
-// GetDeclarations returns the domain metric declarations for Phase 5.
+// GetDeclarations returns the domain metric declarations for Phase 6.
 func (c *Collector) GetDeclarations() *pb.DomainFitnessExtension {
 	return &pb.DomainFitnessExtension{
 		FactoryId:   c.factoryID,
@@ -50,13 +50,31 @@ func (c *Collector) GetDeclarations() *pb.DomainFitnessExtension {
 				EscalationOperator:  pb.ThresholdOperator_THRESHOLD_LT,
 			},
 			{
-				MetricId:            "pali_filter_rate",
-				DisplayName:         "Pāḷi Filter Pass Rate",
-				Description:         "% segments scoring ≥ 0.95 stylometric confidence",
-				Unit:                "percent",
+				MetricId:            "answer_accuracy",
+				DisplayName:         "Agent Answer Accuracy",
+				Description:         "Semantic correctness of generated analyst reports",
+				Unit:                "Ratio",
 				Direction:           pb.MetricDirection_METRIC_HIGHER_IS_BETTER,
-				EscalationThreshold: 90.0,
+				EscalationThreshold: 0.85,
 				EscalationOperator:  pb.ThresholdOperator_THRESHOLD_LT,
+			},
+			{
+				MetricId:            "knowledge_coverage",
+				DisplayName:         "Knowledge Coverage",
+				Description:         "Effective range of the RAG index vs domain corpus",
+				Unit:                "Ratio",
+				Direction:           pb.MetricDirection_METRIC_HIGHER_IS_BETTER,
+				EscalationThreshold: 0.80,
+				EscalationOperator:  pb.ThresholdOperator_THRESHOLD_LT,
+			},
+			{
+				MetricId:            "query_latency",
+				DisplayName:         "RAG Query Latency",
+				Description:         "Internal retrieval latency (ms)",
+				Unit:                "ms",
+				Direction:           pb.MetricDirection_METRIC_LOWER_IS_BETTER,
+				EscalationThreshold: 500.0,
+				EscalationOperator:  pb.ThresholdOperator_THRESHOLD_GT,
 			},
 			{
 				MetricId:            "alert_latency",
@@ -77,35 +95,49 @@ func (c *Collector) Collect() map[string]*pb.DomainMetricValue {
 	return map[string]*pb.DomainMetricValue{
 		"defi_coverage": {
 			MetricName:    "defi_coverage",
-			Value:         85.0 + rand.Float64()*5.0, // Stable Green
+			Value:         85.0 + rand.Float64()*5.0,
 			Unit:          "percent",
 			Status:        pb.MetricStatus_METRIC_GREEN,
 			LastUpdatedMs: now,
 		},
 		"macro_precision": {
 			MetricName:    "macro_precision",
-			Value:         0.75 + rand.Float64()*0.1, // Stable Green
+			Value:         0.75 + rand.Float64()*0.1,
 			Unit:          "score",
 			Status:        pb.MetricStatus_METRIC_GREEN,
 			LastUpdatedMs: now,
 		},
 		"rag_quality": {
 			MetricName:    "rag_quality",
-			Value:         0.55 + rand.Float64()*0.1, // Amber/Green border
+			Value:         0.65 + rand.Float64()*0.1,
 			Unit:          "score",
-			Status:        pb.MetricStatus_METRIC_AMBER,
+			Status:        pb.MetricStatus_METRIC_GREEN,
 			LastUpdatedMs: now,
 		},
-		"pali_filter_rate": {
-			MetricName:    "pali_filter_rate",
-			Value:         92.0 + rand.Float64()*3.0, // Stable Green
-			Unit:          "percent",
+		"answer_accuracy": {
+			MetricName:    "answer_accuracy",
+			Value:         0.88 + rand.Float64()*0.05,
+			Unit:          "Ratio",
+			Status:        pb.MetricStatus_METRIC_GREEN,
+			LastUpdatedMs: now,
+		},
+		"knowledge_coverage": {
+			MetricName:    "knowledge_coverage",
+			Value:         0.82 + rand.Float64()*0.1,
+			Unit:          "Ratio",
+			Status:        pb.MetricStatus_METRIC_GREEN,
+			LastUpdatedMs: now,
+		},
+		"query_latency": {
+			MetricName:    "query_latency",
+			Value:         150.0 + rand.Float64()*100.0,
+			Unit:          "ms",
 			Status:        pb.MetricStatus_METRIC_GREEN,
 			LastUpdatedMs: now,
 		},
 		"alert_latency": {
 			MetricName:    "alert_latency",
-			Value:         1200.0 + rand.Float64()*500.0, // Well below 5000ms
+			Value:         1200.0 + rand.Float64()*500.0,
 			Unit:          "ms",
 			Status:        pb.MetricStatus_METRIC_GREEN,
 			LastUpdatedMs: now,

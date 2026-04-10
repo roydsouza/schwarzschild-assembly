@@ -161,3 +161,17 @@ cd root-spine   && go test ./...
 cd safety-rail  && cargo test --features tier1
 cd control-panel && npx vitest run
 ```
+
+---
+
+## Rule 15: The Physics of Synchronization
+
+Every significant state change or session close must follow the centralized synchronization protocol:
+
+1. **Local SYNC_LOG.md**: Always update `{PROJECT_ROOT}/SYNC_LOG.md` with a summary of the current session's accomplishments and the immediate next steps.
+2. **Central SYNC_LOG.md**: If there is a need to share status across the `~/antigravity/` ecosystem (e.g., between `schwarzschild-assembly` and `event-horizon-core`), append an entry to `~/antigravity/SYNC_LOG.md`.
+3. **Peer Repositories**: Peer directories like `umbra/`, `penumbra/`, or `darkmatter/` are **NOT** to be used for status synchronization.
+4. **Checkpoint Protocol**: When the user says "checkpoint", perform the following:
+   - Update both local and central `SYNC_LOG.md` files.
+   - Run `git add . && git commit -m "checkpoint: <summary>"` in the current project root.
+   - Do **NOT** interact with the `umbra` repository unless explicitly tasked with a feature inside it.

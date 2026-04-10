@@ -27,12 +27,12 @@ func (s *DomainMCPServer) HandleToolCall(ctx context.Context, toolName string, a
 			return "", fmt.Errorf("metric 'defi_coverage' not available from collector")
 		}
 		return fmt.Sprintf("Current DeFi Coverage: %.2f (Threshold: 0.80)", v.Value), nil
-	case "get_pali_filter_status":
-		v := metrics["pali_filter_rate"]
+	case "get_answer_accuracy":
+		v := metrics["answer_accuracy"]
 		if v == nil {
-			return "", fmt.Errorf("metric 'pali_filter_rate' not available from collector")
+			return "", fmt.Errorf("metric 'answer_accuracy' not available")
 		}
-		return fmt.Sprintf("Pāḷi Filter Precision: %.2f", v.Value), nil
+		return fmt.Sprintf("Agent Answer Accuracy: %.2f (Threshold: 0.85)", v.Value), nil
 	case "get_macro_precision":
 		v := metrics["macro_precision"]
 		if v == nil {
@@ -45,6 +45,18 @@ func (s *DomainMCPServer) HandleToolCall(ctx context.Context, toolName string, a
 			return "", fmt.Errorf("metric 'rag_quality' not available")
 		}
 		return fmt.Sprintf("RAG Quality Score: %.2f", v.Value), nil
+	case "get_knowledge_coverage":
+		v := metrics["knowledge_coverage"]
+		if v == nil {
+			return "", fmt.Errorf("metric 'knowledge_coverage' not available")
+		}
+		return fmt.Sprintf("Knowledge Coverage: %.2f (Threshold: 0.80)", v.Value), nil
+	case "get_query_latency":
+		v := metrics["query_latency"]
+		if v == nil {
+			return "", fmt.Errorf("metric 'query_latency' not available")
+		}
+		return fmt.Sprintf("Average RAG Query Latency: %.2f ms (Threshold: 500ms)", v.Value), nil
 	case "get_alert_latency":
 		v := metrics["alert_latency"]
 		if v == nil {
@@ -64,8 +76,8 @@ func (s *DomainMCPServer) ToolDefinitions() []map[string]interface{} {
 			"description": "Returns the current DeFi protocol coverage metric from the synthetic analyst factory.",
 		},
 		{
-			"name":        "get_pali_filter_status",
-			"description": "Returns the current precision of the Pāḷi content filter.",
+			"name":        "get_answer_accuracy",
+			"description": "Returns the current semantic accuracy score of generated analyst reports.",
 		},
 		{
 			"name":        "get_macro_precision",
@@ -74,6 +86,14 @@ func (s *DomainMCPServer) ToolDefinitions() []map[string]interface{} {
 		{
 			"name":        "get_rag_quality_score",
 			"description": "Returns the current quality score of the analyst's RAG pipeline.",
+		},
+		{
+			"name":        "get_knowledge_coverage",
+			"description": "Returns the effective range of the RAG index vs domain corpus.",
+		},
+		{
+			"name":        "get_query_latency",
+			"description": "Returns the internal RAG retrieval latency in milliseconds.",
 		},
 		{
 			"name":        "get_alert_latency",

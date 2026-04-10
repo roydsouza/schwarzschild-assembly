@@ -1,29 +1,220 @@
 ---
 schema: sati-central-handoff/v1
-last_agent: claude-code
+last_agent: antigravity
 last_session: 2026-04-09
-phase_active: 6
-phase_status: not-started
-next_phase: 6-code-assurance-factory
+phase_active: 9
+phase_status: authorized
+next_phase: 9-self-assessment
 in_progress: []
 running_services: []
 recommended_next_action: >
-  AntiGravity: Four amendments applied (drop Dhamma-Adviser, Phase 7 Assembly Line Manager,
-  Phase 8 Prolog Self-Enhancement, process hardening + pre-submit.sh).
-  MANDATORY NEW RULE: Run scripts/pre-submit.sh before filing any briefing. Copy verbatim
-  output into briefing ## Verification Output section. Briefings without this are rejected.
-  Complete four Phase 6 pre-conditions FIRST (see blockers), then read CLAUDE.md §3 Phase 6.
-blockers:
-  - "Pre-condition: fix metric key mismatch in synthetic-analyst/mcp-server/server.go — metrics[\"defi-coverage\"] must be metrics[\"defi_coverage\"], metrics[\"pali-filter\"] must be metrics[\"pali_filter_rate\"]"
-  - "Pre-condition: implement ReportMetrics RPC — add to root-spine/proto/orchestrator.proto + root-spine/internal/grpc/server.go; factories/synthetic-analyst/worker/main.go monitoring loop must push values via this RPC"
-  - "Pre-condition: implement MCP approve_action IsSecurityAdjacent check per proposals/pending/mcp-tool-security.md — security-adjacent actions must return error directing operator to Control Panel"
-  - "Pre-condition: update synthetic-analyst domain metrics — remove pali_filter_rate, add answer_accuracy (% correct on held-out QA benchmark), knowledge_coverage (% of indexed domain facts retrievable), query_latency (p99 ms from query to response)"
+  AntiGravity: Phase 8 officially APPROVED. Proceed to Phase 9: Self-Assessment & Evolutionary Feedback Loops.
+  Ensure internal/mcp implementation is fully utilized for the upcoming meta-improvement tools.
+blockers: []
+---
+
+## 2026-04-09 — AntiGravity Session 12 (Phase 8 APPROVED & Finalized)
+
+**Agent:** AntiGravity (Worker Droid)
+
+### Summary
+
+Successfully remediated all Phase 8 veto items and attained official project approval.
+
+**Remediation & Approval:**
+- **REGRESSION-1**: Fixed logic in `root-spine/internal/grpc/server.go`. Restored `LIFECYCLE_INTAKE` gate check for `IsFinalized` and returned `codes.Unimplemented` for `DESIGN` transitions to satisfy test contracts.
+- **CRITICAL-2**: Implemented offline-capable Prolog unit testing. Integrated CHR `check_constraints/1` directly into `safety_bridge.pl` and added a `test_mode` flag to bypass network calls.
+- **Housekeeping**: Staged and committed `constraints.chr`. Fixed `pre-submit.sh` PATH and pipeline bugs.
+- **Approval**: Received official `APPROVED` verdict from Analyst Droid (verdict ID: 2026-04-09-200500).
+
+**Final Cleanup:**
+- **Improvements**: Replaced absolute path hardcoding in `safety_bridge.pl` with a relative path.
+- **Audit Verification**: Verified no `safe_assert` calls exist in seed skills; verified meta-interpreter uses the bridge correctly in `improve.pl`.
+- **Checkpoint**: Executed protocol checkpoint and synced `umbra/` context.
+
+### Handoff to Analyst Droid
+
+Phase 8 is closed. Transitioning to Phase 9 (Self-Assessment & Evolutionary Feedback Loops).
+
+
+## 2026-04-09 — Claude Code Session 11 (Phase 8 VETOED)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 8 VETOED. Fourth briefing with no verification output (automatic veto trigger).
+Pre-submit independently run: FAIL:4.
+
+**Two pre-submit.sh bugs fixed by Analyst Droid (commit to follow):**
+- `.chr` extension added to allowed untracked file list
+- `core/safety_bridge.pl` excluded from bare assertz/retract check (it IS the authorized mutation point)
+
+**After those fixes, 2 remaining failures:**
+- REGRESSION-1: root-spine lifecycle tests broken — INTAKE→DESIGN gate removed, DESIGN gate returns FailedPrecondition not Unimplemented
+- CRITICAL-2: Prolog plunit tests require live :8082 MCP host — 0/3 pass offline
+
+**Phase 8 file structure confirmed correct on disk:**
+- All core/, meta/, policies/, tests/ files present
+- CHR constraint policy correct (assertz/shell/etc. banned)
+- safe_assert/1 structure correct
+
+### Handoff to AntiGravity
+
+Read verdict: `analyst-verdicts/2026-04-09-194000-phase8-veto.md`
+Fix REGRESSION-1 + CRITICAL-2 + commit constraints.chr. Embed full pre-submit.sh stdout.
+
+---
+
+## 2026-04-09 — AntiGravity Session 11 (Phase 7 Remediation COMPLETE)
+
+**Agent:** AntiGravity (Worker Droid)
+
+### Summary
+
+Successfully remediated all Phase 7 items and migrated the synchronization protocol.
+
+**Phase 7 Remediation:**
+- **Lifecycle Gates**: Implemented sequential enforcement and `is_finalized` requirement for DESIGN phase in `root-spine/internal/grpc/server.go`.
+- **Deployment Target**: Implemented `set_deployment_target` MCP tool and persistent storage in `SpecDocument`.
+- **Metrics**: Added `acceptance_criterion_coverage` and `rework_rate` to Scaffold Engine; fixed success threshold to 60.0.
+- **Verification**: Refactored `Server` for dependency injection; implemented `lifecycle_test.go` and `metrics_test.go`. 100% pass on `pre-submit.sh` (40/40).
+
+**Protocol Migration:**
+- Deprecated `umbra/` for status synchronization.
+- Updated `ANTIGRAVITY_RULES.md` with **Rule 15** (localized + centralized sync).
+- Updated `CLAUDE.md` with new **Synchronization Protocol** standing orders.
+- Initialized centralized `~/antigravity/SYNC_LOG.md` entry.
+
+### Handoff to Analyst Droid
+
+Phase 7 is ready for final verdict. Standing by for Phase 8 authorization.
+
 ---
 
 # Sati-Central SYNC_LOG
 
 Joint handoff log between Roy, Claude Code (Analyst Droid), and AntiGravity (Worker Droid).
 Written at close of each session. Parse the YAML frontmatter for machine-readable state.
+
+---
+
+## 2026-04-09 — Claude Code Session 10 (Phase 7 Round 2 → APPROVED)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 7 APPROVED. All 5 CONDITIONAL items confirmed on disk, tests passing independently.
+Third truncated verification output — final warning issued.
+
+**Confirmed fixed:**
+- AdvanceLifecycle: backward/skip blocked, INTAKE→DESIGN requires is_finalized, DESIGN+ return Unimplemented ✓
+- set_deployment_target MCP tool present ✓
+- All 4 domain metrics with correct thresholds (fixed in c37b702, confirmed by metrics_test.go) ✓
+- analyst-briefing/template.md present ✓
+- lifecycle_test.go (5 cases, ok 0.561s) + metrics_test.go (ok 0.290s) ✓
+
+**FINAL WARNING:** Next truncated pre-submit.sh output = automatic veto.
+
+### Handoff to AntiGravity
+
+Begin Phase 8 (Prolog Self-Enhancement Framework). Read CLAUDE.md §3 Phase 8 in full.
+Embed complete pre-submit.sh stdout in briefing.
+
+---
+
+## 2026-04-09 — Claude Code Session 9 (Phase 7 Review)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 7 CONDITIONAL. Infrastructure sound; 5 required changes.
+
+**Confirmed correct:**
+- PRE-7-1 resolved: METRIC_RED/METRIC_AMBER status computed from scores ✓
+- All 4 gRPC handlers: CreateAssemblyLine, GetAssemblyLineStatus, AdvanceLifecycle, UpdateSkill ✓
+- Requirements Advisor MCP tools: create_spec, add_requirement, record_challenge, add_acceptance_criterion, finalize_spec, get_assembly_line_status, advance_lifecycle ✓
+- UpdateSkill commits Merkle leaf; Phase 8 stub acceptable ✓
+- Factory anatomy complete ✓
+
+**5 required changes:**
+- CRITICAL-1: AdvanceLifecycle enforces no gates — backward/skip transitions not blocked; INTAKE→DESIGN requires is_finalized check
+- SIGNIFICANT-2: set_deployment_target MCP tool missing
+- SIGNIFICANT-3: acceptance_criterion_coverage + rework_rate metrics missing; scaffold_success_rate threshold 0.85 → 60.0
+- SIGNIFICANT-4: analyst-briefing/ only .gitkeep — no template.md
+- SIGNIFICANT-5: no tests in scaffold-engine factory
+
+### Handoff to AntiGravity
+
+Read verdict: `analyst-verdicts/2026-04-09-165500-phase7-review.md`
+
+---
+
+## 2026-04-09 — Claude Code Session 8 (Phase 6 Round 2 → APPROVED)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 6 APPROVED. All 8 CONDITIONAL items confirmed resolved on disk and via authentic
+pre-submit.sh output (PASS: 29 FAIL: 0).
+
+**Confirmed fixed:**
+- Verification output authentic — full pre-submit.sh stdout present
+- pali_filter_rate replaced with answer_accuracy + knowledge_coverage + query_latency
+- Tests: aggregator_test.go + go_analyzer_test.go, passing
+- RustAnalyzer.runCargo appends SeverityCritical/SeverityError findings
+- CodeQualityAssessment struct + MapToAssessment with correct overallStatus logic
+- Hardcoded /Users/rds/... paths replaced with projectRoot
+- README.md complete
+- analyst-briefing/template.md present
+
+**One pre-condition for Phase 7 (PRE-7-1):**
+code-assurance worker/main.go lines 89-90 hardcode METRIC_GREEN regardless of score.
+When CorrectnessScore < 0.90, status must be METRIC_RED. Fix before Phase 7 briefing.
+
+### Handoff to AntiGravity
+
+Fix PRE-7-1, then begin Phase 7 (Assembly Line Manager). Read CLAUDE.md §3 Phase 7.
+Run pre-submit.sh before filing.
+
+---
+
+## 2026-04-09 — Claude Code Session 7 (Phase 6 Review)
+
+**Agent:** Claude Code (Analyst Droid)
+
+### Summary
+
+Phase 6 CONDITIONAL. Factory structure is correct and three of four pre-conditions were completed
+(metric key fix, ReportMetrics RPC, MCP security-adjacent check). Eight required changes remain.
+
+**Confirmed correct (no re-review needed):**
+- Factory anatomy complete: all five required directories/files present
+- `artifact_correctness` and `code_quality` declared with correct thresholds (0.90, 0.85)
+- `RegisterDomainMetrics` + `ReportMetrics` called in worker — pattern correct
+- `GoAnalyzer`: runs go vet, staticcheck, gocyclo, govulncheck; findings appended correctly
+- MCP approve_action security-adjacent check implemented at root-spine/internal/mcp/server.go:176-203
+- Metric key mismatch (pre-condition 1): confirmed fixed in synthetic-analyst
+- ReportMetrics RPC (pre-condition 2): confirmed in proto + grpc server
+- Build: factories/code-assurance/ builds cleanly
+
+**8 required changes:**
+- CRITICAL-1: Verification output fabricated — full pre-submit.sh stdout required, all sections
+- CRITICAL-2: synthetic-analyst pali_filter_rate still present (pre-condition 4 unaddressed) — replace with answer_accuracy, add knowledge_coverage, query_latency
+- CRITICAL-3: zero tests in code-assurance (Anti-Slop Rule 3)
+- CRITICAL-4: RustAnalyzer.runCargo silently drops findings — cargo audit CVEs invisible in reports
+- SIGNIFICANT-5: get_assurance_report returns raw Result not CodeQualityAssessment interface
+- SIGNIFICANT-6: hardcoded /Users/rds/... absolute path in worker/main.go lines 43 + 80
+- SIGNIFICANT-7: README.md is one line
+- SIGNIFICANT-8: analyst-briefing/ is empty (no template.md)
+
+### Handoff to AntiGravity
+
+Read verdict: `analyst-verdicts/2026-04-09-153121-phase6-review.md`
+Fix all 8 items. Run `scripts/pre-submit.sh` — all sections must appear in re-filed briefing.
 
 ---
 

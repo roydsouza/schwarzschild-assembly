@@ -79,6 +79,24 @@ service Orchestrator {
   // ReportMetrics submits domain-specific metric values to the global fitness vector.
   // Called periodically by factories after their internal collection loops.
   rpc ReportMetrics(MetricReport) returns (OperationStatus);
+
+  // ── Assembly line lifecycle (Phase 7) ──────────────────────────────────────
+
+  // CreateAssemblyLine initiates a new software service assembly line from a spec.
+  rpc CreateAssemblyLine(SpecDocument)      returns (AssemblyLine);
+
+  // GetAssemblyLineStatus returns the current lifecycle state of an assembly line.
+  rpc GetAssemblyLineStatus(AssemblyLineID) returns (LifecycleStatus);
+
+  // AdvanceLifecycle transitions an assembly line to the next state.
+  // Enforces state-machine gates (INTAKE → DESIGN → SCAFFOLD → BUILD → VERIFY → DELIVERED).
+  rpc AdvanceLifecycle(LifecycleAdvance)    returns (LifecycleStatus);
+
+  // ── Self-modification — skill versioning (Phase 7, Option A) ────────────────
+
+  // UpdateSkill proposes a new version of an agent's skill.
+  // Must pass Safety Rail. Returns a MerkleProof on success.
+  rpc UpdateSkill(SkillUpdateRequest)       returns (MerkleProof);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -644,4 +662,154 @@ message MetricReport {
   map<string, double> metrics = 2;
   // observed_at_ms is the Unix ms timestamp of the measurement.
   int64 observed_at_ms = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Assembly line lifecycle messages (Phase 7)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SpecDocument is the authoritative requirements document for a new service.
+// Built incrementally during the INTAKE phase via Requirements Advisor tools.
+message SpecDocument {
+  // id is the UUIDv7 specimen identifier.
+  string id = 1;
+  // service_name is the human-readable slug for the service.
+  string service_name = 2;
+  // description is a high-level summary of the service's purpose.
+  string description = 3;
+  // requirements is the list of functional and non-functional requirements.
+  repeated Requirement requirements = 4;
+  // challenges records Roy's responses to Analyst Droid architectural challenges.
+  repeated ChallengeRecord challenges = 5;
+  // acceptance_criteria defines the testable benchmarks for DELIVERY.
+  repeated AcceptanceCriterion acceptance_criteria = 6;
+  // deployment_target specifies where the service will run.
+  DeploymentTarget deployment_target = 7;
+  // primary_language is inferred or explicitly selected (Go, Rust, Python, etc.).
+  string primary_language = 8;
+  // is_finalized is true if Roy has called finalize_spec.
+  bool is_finalized = 9;
+  // approved_at_ms is when the Analyst Droid issued an APPROVED verdict.
+  int64 approved_at_ms = 10;
+}
+
+// Requirement is a single unit of functionality or constraint.
+message Requirement {
+  // id is the UUIDv7 for this requirement.
+  string id = 1;
+  // text is the requirement description verbatim.
+  string text = 2;
+  // category indicates the type of requirement.
+  RequirementCategory category = 3;
+}
+
+// RequirementCategory enumerates types of requirements.
+enum RequirementCategory {
+  REQUIREMENT_UNSPECIFIED = 0;
+  REQUIREMENT_FUNCTIONAL = 1;
+  REQUIREMENT_PERFORMANCE = 2;
+  REQUIREMENT_SECURITY = 3;
+  REQUIREMENT_OPERATIONAL = 4;
+  REQUIREMENT_INTERFACE = 5;
+}
+
+// ChallengeRecord captures Roy's architectural decisions.
+message ChallengeRecord {
+  // id is the UUIDv7 for this record.
+  string id = 1;
+  // challenge is the Analyst Droid's question or concern.
+  string challenge = 2;
+  // response is Roy's verbatim response.
+  string response = 3;
+}
+
+// AcceptanceCriterion defines a testable goal.
+message AcceptanceCriterion {
+  // id is the UUIDv7 for this criterion.
+  string id = 1;
+  // text is the goal description.
+  string text = 2;
+  // metric is the OTel metric ID used to verify this (optional).
+  string metric = 3;
+}
+
+// DeploymentTarget describes the runtime environment.
+message DeploymentTarget {
+  // target_type: LOCAL | CONTAINER | AWS | GCP.
+  string target_type = 1;
+  // config_json is target-specific configuration.
+  bytes config_json = 2;
+}
+
+// AssemblyLine represents a software service creation instance.
+message AssemblyLine {
+  // id is the UUIDv7 for this assembly line.
+  string id = 1;
+  // spec_id refers to the underlying SpecDocument.
+  string spec_id = 2;
+  // service_name matches the SpecDocument.service_name.
+  string service_name = 3;
+  // current_state: INTAKE → DESIGN → SCAFFOLD → BUILD → VERIFY → DELIVERED.
+  LifecycleState current_state = 4;
+  // created_at_ms is the Unix inception timestamp.
+  int64 created_at_ms = 5;
+  // last_pulse_ms is the last recorded pulse from the factory worker.
+  int64 last_pulse_ms = 6;
+}
+
+// AssemblyLineID uniquely identifies an assembly line.
+message AssemblyLineID {
+  string id = 1;
+}
+
+// LifecycleStatus wraps the LifecycleState enum for gRPC returns.
+message LifecycleStatus {
+  LifecycleState state = 1;
+}
+
+// LifecycleState enumerates the gated states of an assembly line.
+enum LifecycleState {
+  LIFECYCLE_UNSPECIFIED = 0;
+  // INTAKE: requirements gathering (Requirements Advisor active).
+  LIFECYCLE_INTAKE = 1;
+  // DESIGN: spec finalized; awaiting Analyst Droid approval.
+  LIFECYCLE_DESIGN = 2;
+  // SCAFFOLD: initial code/tests generation (Scaffold Engine active).
+  LIFECYCLE_SCAFFOLD = 3;
+  // BUILD: service logic implementation (Worker active).
+  LIFECYCLE_BUILD = 4;
+  // VERIFY: quality assessment and criteria verification.
+  LIFECYCLE_VERIFY = 5;
+  // DELIVERED: service is operational and committed.
+  LIFECYCLE_DELIVERED = 6;
+  // ABANDONED: assembly line stopped before delivery.
+  LIFECYCLE_ABANDONED = 7;
+}
+
+// LifecycleAdvance carries the instruction to move to a new state.
+message LifecycleAdvance {
+  // assembly_line_id is the target instance.
+  string assembly_line_id = 1;
+  // target_state is the desired next state.
+  LifecycleState target_state = 2;
+  // justification is the rationale for the transition.
+  string justification = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Skill versioning messages (Phase 7/8)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SkillUpdateRequest proposes a new version of an agent's skill.
+message SkillUpdateRequest {
+  // agent_id identifies the agent (e.g., "synthetic-analyst-01").
+  string agent_id = 1;
+  // skill_name is the identifier for the skill (e.g., "pali_retrieval").
+  string skill_name = 2;
+  // current_version_hash is the SHA-256 hex of the skill currently in use.
+  string current_version_hash = 3;
+  // new_content is the proposed new skill content (code, prompt, or Prolog clauses).
+  bytes new_content = 4;
+  // rationale explains the improvement (or fix).
+  string rationale = 5;
 }

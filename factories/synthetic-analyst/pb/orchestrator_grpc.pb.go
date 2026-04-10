@@ -38,6 +38,10 @@ const (
 	Orchestrator_WriteAnalystBriefing_FullMethodName  = "/sati.central.v1.Orchestrator/WriteAnalystBriefing"
 	Orchestrator_ReadAnalystVerdict_FullMethodName    = "/sati.central.v1.Orchestrator/ReadAnalystVerdict"
 	Orchestrator_ReportMetrics_FullMethodName         = "/sati.central.v1.Orchestrator/ReportMetrics"
+	Orchestrator_CreateAssemblyLine_FullMethodName    = "/sati.central.v1.Orchestrator/CreateAssemblyLine"
+	Orchestrator_GetAssemblyLineStatus_FullMethodName = "/sati.central.v1.Orchestrator/GetAssemblyLineStatus"
+	Orchestrator_AdvanceLifecycle_FullMethodName      = "/sati.central.v1.Orchestrator/AdvanceLifecycle"
+	Orchestrator_UpdateSkill_FullMethodName           = "/sati.central.v1.Orchestrator/UpdateSkill"
 )
 
 // OrchestratorClient is the client API for Orchestrator service.
@@ -84,6 +88,16 @@ type OrchestratorClient interface {
 	// ReportMetrics submits domain-specific metric values to the global fitness vector.
 	// Called periodically by factories after their internal collection loops.
 	ReportMetrics(ctx context.Context, in *MetricReport, opts ...grpc.CallOption) (*OperationStatus, error)
+	// CreateAssemblyLine initiates a new software service assembly line from a spec.
+	CreateAssemblyLine(ctx context.Context, in *SpecDocument, opts ...grpc.CallOption) (*AssemblyLine, error)
+	// GetAssemblyLineStatus returns the current lifecycle state of an assembly line.
+	GetAssemblyLineStatus(ctx context.Context, in *AssemblyLineID, opts ...grpc.CallOption) (*LifecycleStatus, error)
+	// AdvanceLifecycle transitions an assembly line to the next state.
+	// Enforces state-machine gates (INTAKE → DESIGN → SCAFFOLD → BUILD → VERIFY → DELIVERED).
+	AdvanceLifecycle(ctx context.Context, in *LifecycleAdvance, opts ...grpc.CallOption) (*LifecycleStatus, error)
+	// UpdateSkill proposes a new version of an agent's skill.
+	// Must pass Safety Rail. Returns a MerkleProof on success.
+	UpdateSkill(ctx context.Context, in *SkillUpdateRequest, opts ...grpc.CallOption) (*MerkleProof, error)
 }
 
 type orchestratorClient struct {
@@ -223,6 +237,46 @@ func (c *orchestratorClient) ReportMetrics(ctx context.Context, in *MetricReport
 	return out, nil
 }
 
+func (c *orchestratorClient) CreateAssemblyLine(ctx context.Context, in *SpecDocument, opts ...grpc.CallOption) (*AssemblyLine, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AssemblyLine)
+	err := c.cc.Invoke(ctx, Orchestrator_CreateAssemblyLine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orchestratorClient) GetAssemblyLineStatus(ctx context.Context, in *AssemblyLineID, opts ...grpc.CallOption) (*LifecycleStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LifecycleStatus)
+	err := c.cc.Invoke(ctx, Orchestrator_GetAssemblyLineStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orchestratorClient) AdvanceLifecycle(ctx context.Context, in *LifecycleAdvance, opts ...grpc.CallOption) (*LifecycleStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LifecycleStatus)
+	err := c.cc.Invoke(ctx, Orchestrator_AdvanceLifecycle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orchestratorClient) UpdateSkill(ctx context.Context, in *SkillUpdateRequest, opts ...grpc.CallOption) (*MerkleProof, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MerkleProof)
+	err := c.cc.Invoke(ctx, Orchestrator_UpdateSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrchestratorServer is the server API for Orchestrator service.
 // All implementations must embed UnimplementedOrchestratorServer
 // for forward compatibility.
@@ -267,6 +321,16 @@ type OrchestratorServer interface {
 	// ReportMetrics submits domain-specific metric values to the global fitness vector.
 	// Called periodically by factories after their internal collection loops.
 	ReportMetrics(context.Context, *MetricReport) (*OperationStatus, error)
+	// CreateAssemblyLine initiates a new software service assembly line from a spec.
+	CreateAssemblyLine(context.Context, *SpecDocument) (*AssemblyLine, error)
+	// GetAssemblyLineStatus returns the current lifecycle state of an assembly line.
+	GetAssemblyLineStatus(context.Context, *AssemblyLineID) (*LifecycleStatus, error)
+	// AdvanceLifecycle transitions an assembly line to the next state.
+	// Enforces state-machine gates (INTAKE → DESIGN → SCAFFOLD → BUILD → VERIFY → DELIVERED).
+	AdvanceLifecycle(context.Context, *LifecycleAdvance) (*LifecycleStatus, error)
+	// UpdateSkill proposes a new version of an agent's skill.
+	// Must pass Safety Rail. Returns a MerkleProof on success.
+	UpdateSkill(context.Context, *SkillUpdateRequest) (*MerkleProof, error)
 	mustEmbedUnimplementedOrchestratorServer()
 }
 
@@ -312,6 +376,18 @@ func (UnimplementedOrchestratorServer) ReadAnalystVerdict(context.Context, *Verd
 }
 func (UnimplementedOrchestratorServer) ReportMetrics(context.Context, *MetricReport) (*OperationStatus, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportMetrics not implemented")
+}
+func (UnimplementedOrchestratorServer) CreateAssemblyLine(context.Context, *SpecDocument) (*AssemblyLine, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAssemblyLine not implemented")
+}
+func (UnimplementedOrchestratorServer) GetAssemblyLineStatus(context.Context, *AssemblyLineID) (*LifecycleStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAssemblyLineStatus not implemented")
+}
+func (UnimplementedOrchestratorServer) AdvanceLifecycle(context.Context, *LifecycleAdvance) (*LifecycleStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdvanceLifecycle not implemented")
+}
+func (UnimplementedOrchestratorServer) UpdateSkill(context.Context, *SkillUpdateRequest) (*MerkleProof, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSkill not implemented")
 }
 func (UnimplementedOrchestratorServer) mustEmbedUnimplementedOrchestratorServer() {}
 func (UnimplementedOrchestratorServer) testEmbeddedByValue()                      {}
@@ -543,6 +619,78 @@ func _Orchestrator_ReportMetrics_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orchestrator_CreateAssemblyLine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SpecDocument)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrchestratorServer).CreateAssemblyLine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orchestrator_CreateAssemblyLine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrchestratorServer).CreateAssemblyLine(ctx, req.(*SpecDocument))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orchestrator_GetAssemblyLineStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssemblyLineID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrchestratorServer).GetAssemblyLineStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orchestrator_GetAssemblyLineStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrchestratorServer).GetAssemblyLineStatus(ctx, req.(*AssemblyLineID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orchestrator_AdvanceLifecycle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LifecycleAdvance)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrchestratorServer).AdvanceLifecycle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orchestrator_AdvanceLifecycle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrchestratorServer).AdvanceLifecycle(ctx, req.(*LifecycleAdvance))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orchestrator_UpdateSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrchestratorServer).UpdateSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orchestrator_UpdateSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrchestratorServer).UpdateSkill(ctx, req.(*SkillUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Orchestrator_ServiceDesc is the grpc.ServiceDesc for Orchestrator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -593,6 +741,22 @@ var Orchestrator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportMetrics",
 			Handler:    _Orchestrator_ReportMetrics_Handler,
+		},
+		{
+			MethodName: "CreateAssemblyLine",
+			Handler:    _Orchestrator_CreateAssemblyLine_Handler,
+		},
+		{
+			MethodName: "GetAssemblyLineStatus",
+			Handler:    _Orchestrator_GetAssemblyLineStatus_Handler,
+		},
+		{
+			MethodName: "AdvanceLifecycle",
+			Handler:    _Orchestrator_AdvanceLifecycle_Handler,
+		},
+		{
+			MethodName: "UpdateSkill",
+			Handler:    _Orchestrator_UpdateSkill_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
