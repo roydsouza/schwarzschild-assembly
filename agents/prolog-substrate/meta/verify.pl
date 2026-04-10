@@ -18,10 +18,21 @@ check_invariants((Head :- _Body)) :-
     strip_module(Head, _Module, PlainHead),
     % 2. Prohibit redefinition of system-level predicates
     functor(PlainHead, Name, _),
-    \+ is_system_predicate(Name).
+    ( is_system_predicate(Name) 
+    -> format(atom(Msg), 'redefinition of meta-improvement logic prohibited: ~w', [Name]),
+       throw(error(safety_violation(Msg), _))
+    ;  true
+    ).
 
 check_invariants(Head) :-
-    (atom(Head) ; compound(Head)).
+    (atom(Head) ; compound(Head)),
+    strip_module(Head, _Module, PlainHead),
+    functor(PlainHead, Name, _),
+    ( is_system_predicate(Name) 
+    -> format(atom(Msg), 'redefinition of meta-improvement logic prohibited: ~w', [Name]),
+       throw(error(safety_violation(Msg), _))
+    ;  true
+    ).
 
 is_system_predicate(safe_assert).
 is_system_predicate(safe_retract).
@@ -34,3 +45,4 @@ is_system_predicate(measure_performance).
 is_system_predicate(check_invariants).
 is_system_predicate(propose_improvement).
 is_system_predicate(improve_if_slow).
+is_system_predicate(evaluate_candidate).

@@ -5,6 +5,7 @@
 
 :- use_module(merkle_bridge).
 :- use_module(otel_bridge).
+:- use_module('../meta/verify').
 
 % Load constraints.chr using a relative path
 :- use_module('../policies/constraints.chr').
@@ -33,8 +34,12 @@ safe_assert(Clause) :-
     safe_assert_metric('sati_central.prolog.skill_assertion_attempt_total', 1),
     
     % 1.5 Local CHR constraint check — runs entirely offline
-    % Will throw safety_violation(Msg) if a banned predicate is found
+    % Will throw safety_violation(Msg) if a banned predicate is found in the body
     constraints:check_constraints(Clause),
+
+    % 1.6 Head Redefinition Guard
+    % Throws safety_violation(Reason) if Head matches a system predicate
+    verify:check_invariants(Clause),
     
     % 2. Safety Rail + Merkle Commit
     % Skip network call in offline test_mode; CHR already validated the clause.
