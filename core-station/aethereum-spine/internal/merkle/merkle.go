@@ -27,6 +27,16 @@ func (h Hash) Hex() string {
 	return hex.EncodeToString(h[:])
 }
 
+// HashFromHex parses a hex string into a Hash.
+func HashFromHex(s string) Hash {
+	var h Hash
+	b, err := hex.DecodeString(s)
+	if err == nil && len(b) == 32 {
+		copy(h[:], b)
+	}
+	return h
+}
+
 // Tree represents an append-only Merkle tree.
 type Tree struct {
 	leaves []Hash

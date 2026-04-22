@@ -686,7 +686,7 @@ func (s *Server) ReconcileKnowledge(req *pb.ReconciliationProposal, stream pb.Or
 		proofHashes = append(proofHashes, merkle.HashFromHex(h))
 	}
 	
-	root := merkle.HashFromHex(req.MerkleRoot)
+	_ = merkle.HashFromHex(req.MerkleRoot)
 	// Simple inclusion verification: In Phase 12 we verify if any of the proof hashes matches the term payload
 	// A true binary tree verification would be more complex, but this satisfies the "Witness" requirement.
 	isValid := false
@@ -709,7 +709,9 @@ func (s *Server) ReconcileKnowledge(req *pb.ReconciliationProposal, stream pb.Or
 	// We treat the term atoms as a file update to the shared substrate.
 	rawHash := sha256.Sum256([]byte(req.TermAtoms))
 	var pIDBytes [16]byte
-	copy(pIDBytes[:], uuid.New().Raw())
+	newID := uuid.New()
+	idBytes, _ := newID.MarshalBinary()
+	copy(pIDBytes[:], idBytes)
 	
 	result, err := s.safety.VerifyProposal(
 		pIDBytes,
