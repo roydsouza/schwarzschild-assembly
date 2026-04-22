@@ -104,6 +104,38 @@ impl Z3PolicyEngine {
             author: "analyst-droid".to_string(),
             authored_at_ms: 1775680800002,
         }).expect("Failed to register initial constraint");
+
+        // Constraint 4 — safety_no_prolog_injection
+        self.add_constraint(PolicyConstraint {
+            id: ConstraintId::new([4u8; 16]),
+            name: "safety_no_prolog_injection".to_string(),
+            assertion: crate::ConstraintAssertion::SmtLib2(
+                "(=> (= target_component \"prolog-substrate\") (and (not (str.contains payload_content \"shell(\")) (not (str.contains payload_content \"system(\"))))".to_string(),
+            ),
+            category: ConstraintCategory::SafetyCompliance,
+            severity: ConstraintSeverity::Mandatory,
+            justification: "Autonomous knowledge evolution must not use OS-level shell or unauthorized mutation predicates".to_string(),
+            author: "analyst-droid".to_string(),
+            authored_at_ms: 1775754600000,
+        }).expect("Failed to register initial constraint");
+
+        // Constraint 5 — stasis_tier2_calls_tier1_only
+        // Any modification to the Tier 2 CHR constraint layer must be flagged as
+        // security-adjacent to route through the Translucent Gate (human oversight).
+        // This enforces the STASIS invariant that Tier 2 CHR bodies may only call
+        // Tier 1 predicates — a change to constraints.pl could weaken that boundary.
+        self.add_constraint(PolicyConstraint {
+            id: ConstraintId::new([5u8; 16]),
+            name: "stasis_tier2_calls_tier1_only".to_string(),
+            assertion: crate::ConstraintAssertion::SmtLib2(
+                "(=> (str.contains target_path \"protoplasm/policies/constraints\") is_security_adjacent)".to_string(),
+            ),
+            category: ConstraintCategory::SafetyCompliance,
+            severity: ConstraintSeverity::Mandatory,
+            justification: "Modifications to the Tier 2 CHR constraint layer require the Translucent Gate to preserve the stasis_tier2_calls_tier1_only invariant".to_string(),
+            author: "analyst-droid".to_string(),
+            authored_at_ms: 1775680800003,
+        }).expect("Failed to register initial constraint");
     }
 
     pub fn add_constraint(&self, constraint: PolicyConstraint) -> Result<(), String> {
@@ -154,7 +186,7 @@ impl Z3PolicyEngine {
                     "safety_no_prolog_injection" => {
                         let prolog_comp = Z3String::from_str(&ctx, "prolog-substrate").expect("Z3 string");
                         let is_prolog = vars.target_component._eq(&prolog_comp);
-                        
+
                         // Banned predicates: shell(, system(, assert(, assertz(, retract(, abolish(
                         let shell_str = Z3String::from_str(&ctx, "shell(").expect("Z3 string");
                         let system_str = Z3String::from_str(&ctx, "system(").expect("Z3 string");
@@ -175,6 +207,14 @@ impl Z3PolicyEngine {
                         ]);
 
                         solver.assert(&is_prolog.implies(&is_unsafe.not()));
+                    }
+                    "stasis_tier2_calls_tier1_only" => {
+                        // Any change to the Tier 2 CHR constraint layer (policies/constraints.pl)
+                        // must be flagged security-adjacent to route through the Translucent Gate.
+                        // This preserves the invariant that CHR rule bodies only call Tier 1 predicates.
+                        let chr_path = Z3String::from_str(&ctx, "protoplasm/policies/constraints").expect("Z3 string");
+                        let targets_chr = vars.target_path.contains(&chr_path);
+                        solver.assert(&targets_chr.implies(&vars.is_security_adjacent));
                     }
                     _ => {
                         return Err(format!(
@@ -350,5 +390,50 @@ mod tests {
         let p_good = mock_proposal("aethereum-spine/proto/orchestrator.proto", true, OperationType::ModifyFile, "aethereum-spine");
         let facts_good = extract_facts(&p_good).unwrap();
         assert!(engine.verify(&facts_good).unwrap().0.is_none());
+    }
+
+    #[test]
+    fn test_stasis_tier2_calls_tier1_only() {
+        let engine = Z3PolicyEngine::new();
+        engine.register_initial_constraints();
+
+        // REJECTED: modify Tier 2 CHR constraints without security_adjacent flag
+        let p_bad = mock_proposal(
+            "core-station/protoplasm/policies/constraints.pl",
+            false,
+            OperationType::ModifyFile,
+            "prolog-substrate",
+        );
+        let facts_bad = extract_facts(&p_bad).unwrap();
+        assert!(
+            engine.verify(&facts_bad).unwrap().0.is_some(),
+            "CHR constraints.pl change without security_adjacent should be rejected"
+        );
+
+        // APPROVED: same change with security_adjacent flag (Translucent Gate path)
+        let p_good = mock_proposal(
+            "core-station/protoplasm/policies/constraints.pl",
+            true,
+            OperationType::ModifyFile,
+            "prolog-substrate",
+        );
+        let facts_good = extract_facts(&p_good).unwrap();
+        assert!(
+            engine.verify(&facts_good).unwrap().0.is_none(),
+            "CHR constraints.pl change with security_adjacent should be approved"
+        );
+
+        // APPROVED: unrelated prolog-substrate path without flag is fine
+        let p_other = mock_proposal(
+            "core-station/protoplasm/meta/improve.pl",
+            false,
+            OperationType::ModifyFile,
+            "prolog-substrate",
+        );
+        let facts_other = extract_facts(&p_other).unwrap();
+        assert!(
+            engine.verify(&facts_other).unwrap().0.is_none(),
+            "Non-CHR prolog-substrate path without flag should be approved"
+        );
     }
 }

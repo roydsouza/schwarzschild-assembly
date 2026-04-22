@@ -655,6 +655,59 @@ func (LifecycleState) EnumDescriptor() ([]byte, []int) {
 	return file_orchestrator_proto_rawDescGZIP(), []int{9}
 }
 
+// ConsensusState enumerates the phases of the reconciliation protocol.
+type ConsensusState int32
+
+const (
+	ConsensusState_CONSENSUS_PROPOSED   ConsensusState = 0
+	ConsensusState_CONSENSUS_VOTING     ConsensusState = 1
+	ConsensusState_CONSENSUS_RECONCILED ConsensusState = 2
+	ConsensusState_CONSENSUS_REJECTED   ConsensusState = 3
+)
+
+// Enum value maps for ConsensusState.
+var (
+	ConsensusState_name = map[int32]string{
+		0: "CONSENSUS_PROPOSED",
+		1: "CONSENSUS_VOTING",
+		2: "CONSENSUS_RECONCILED",
+		3: "CONSENSUS_REJECTED",
+	}
+	ConsensusState_value = map[string]int32{
+		"CONSENSUS_PROPOSED":   0,
+		"CONSENSUS_VOTING":     1,
+		"CONSENSUS_RECONCILED": 2,
+		"CONSENSUS_REJECTED":   3,
+	}
+)
+
+func (x ConsensusState) Enum() *ConsensusState {
+	p := new(ConsensusState)
+	*p = x
+	return p
+}
+
+func (x ConsensusState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConsensusState) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchestrator_proto_enumTypes[10].Descriptor()
+}
+
+func (ConsensusState) Type() protoreflect.EnumType {
+	return &file_orchestrator_proto_enumTypes[10]
+}
+
+func (x ConsensusState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConsensusState.Descriptor instead.
+func (ConsensusState) EnumDescriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{10}
+}
+
 // Empty is used for RPCs that require no input.
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3893,6 +3946,179 @@ func (x *SkillUpdateRequest) GetRationale() string {
 	return ""
 }
 
+// ReconciliationProposal describes a local skill for global promotion.
+type ReconciliationProposal struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// proposal_id is the unique UUID for this consensus event.
+	ProposalId string `protobuf:"bytes,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+	// source_agent_id identifies the ship that learned the skill.
+	SourceAgentId string `protobuf:"bytes,2,opt,name=source_agent_id,json=sourceAgentId,proto3" json:"source_agent_id,omitempty"`
+	// term_atoms is the Prolog representation of the logic.
+	TermAtoms string `protobuf:"bytes,3,opt,name=term_atoms,json=termAtoms,proto3" json:"term_atoms,omitempty"`
+	// fitness_score is the measured performance impact [0,1].
+	FitnessScore float64 `protobuf:"fixed64,4,opt,name=fitness_score,json=fitnessScore,proto3" json:"fitness_score,omitempty"`
+	// merkle_root is the ship's current audit trail root.
+	MerkleRoot string `protobuf:"bytes,5,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	// merkle_proof is the witness for this specific mutation.
+	MerkleProof   []string `protobuf:"bytes,6,rep,name=merkle_proof,json=merkleProof,proto3" json:"merkle_proof,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReconciliationProposal) Reset() {
+	*x = ReconciliationProposal{}
+	mi := &file_orchestrator_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReconciliationProposal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReconciliationProposal) ProtoMessage() {}
+
+func (x *ReconciliationProposal) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReconciliationProposal.ProtoReflect.Descriptor instead.
+func (*ReconciliationProposal) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *ReconciliationProposal) GetProposalId() string {
+	if x != nil {
+		return x.ProposalId
+	}
+	return ""
+}
+
+func (x *ReconciliationProposal) GetSourceAgentId() string {
+	if x != nil {
+		return x.SourceAgentId
+	}
+	return ""
+}
+
+func (x *ReconciliationProposal) GetTermAtoms() string {
+	if x != nil {
+		return x.TermAtoms
+	}
+	return ""
+}
+
+func (x *ReconciliationProposal) GetFitnessScore() float64 {
+	if x != nil {
+		return x.FitnessScore
+	}
+	return 0
+}
+
+func (x *ReconciliationProposal) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *ReconciliationProposal) GetMerkleProof() []string {
+	if x != nil {
+		return x.MerkleProof
+	}
+	return nil
+}
+
+// ConsensusEvent describes a step in the reconciliation lifecycle.
+type ConsensusEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// proposal_id matches the ReconciliationProposal.
+	ProposalId string `protobuf:"bytes,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+	// state is the current phase of consensus.
+	State ConsensusState `protobuf:"varint,2,opt,name=state,proto3,enum=sati.central.v1.ConsensusState" json:"state,omitempty"`
+	// voters is the count of ships that have verified the proposal.
+	Voters int32 `protobuf:"varint,3,opt,name=voters,proto3" json:"voters,omitempty"`
+	// quorum_reached is true if the station-wide threshold is met.
+	QuorumReached bool `protobuf:"varint,4,opt,name=quorum_reached,json=quorumReached,proto3" json:"quorum_reached,omitempty"`
+	// message is a human-readable status note.
+	Message       string `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConsensusEvent) Reset() {
+	*x = ConsensusEvent{}
+	mi := &file_orchestrator_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConsensusEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConsensusEvent) ProtoMessage() {}
+
+func (x *ConsensusEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConsensusEvent.ProtoReflect.Descriptor instead.
+func (*ConsensusEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *ConsensusEvent) GetProposalId() string {
+	if x != nil {
+		return x.ProposalId
+	}
+	return ""
+}
+
+func (x *ConsensusEvent) GetState() ConsensusState {
+	if x != nil {
+		return x.State
+	}
+	return ConsensusState_CONSENSUS_PROPOSED
+}
+
+func (x *ConsensusEvent) GetVoters() int32 {
+	if x != nil {
+		return x.Voters
+	}
+	return 0
+}
+
+func (x *ConsensusEvent) GetQuorumReached() bool {
+	if x != nil {
+		return x.QuorumReached
+	}
+	return false
+}
+
+func (x *ConsensusEvent) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_orchestrator_proto protoreflect.FileDescriptor
 
 const file_orchestrator_proto_rawDesc = "" +
@@ -4168,7 +4394,24 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x14current_version_hash\x18\x03 \x01(\tR\x12currentVersionHash\x12\x1f\n" +
 	"\vnew_content\x18\x04 \x01(\fR\n" +
 	"newContent\x12\x1c\n" +
-	"\trationale\x18\x05 \x01(\tR\trationale*\x96\x01\n" +
+	"\trationale\x18\x05 \x01(\tR\trationale\"\xe9\x01\n" +
+	"\x16ReconciliationProposal\x12\x1f\n" +
+	"\vproposal_id\x18\x01 \x01(\tR\n" +
+	"proposalId\x12&\n" +
+	"\x0fsource_agent_id\x18\x02 \x01(\tR\rsourceAgentId\x12\x1d\n" +
+	"\n" +
+	"term_atoms\x18\x03 \x01(\tR\ttermAtoms\x12#\n" +
+	"\rfitness_score\x18\x04 \x01(\x01R\ffitnessScore\x12\x1f\n" +
+	"\vmerkle_root\x18\x05 \x01(\tR\n" +
+	"merkleRoot\x12!\n" +
+	"\fmerkle_proof\x18\x06 \x03(\tR\vmerkleProof\"\xc1\x01\n" +
+	"\x0eConsensusEvent\x12\x1f\n" +
+	"\vproposal_id\x18\x01 \x01(\tR\n" +
+	"proposalId\x125\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x1f.sati.central.v1.ConsensusStateR\x05state\x12\x16\n" +
+	"\x06voters\x18\x03 \x01(\x05R\x06voters\x12%\n" +
+	"\x0equorum_reached\x18\x04 \x01(\bR\rquorumReached\x12\x18\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage*\x96\x01\n" +
 	"\fFactoryState\x12\x1d\n" +
 	"\x19FACTORY_STATE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10FACTORY_STARTING\x10\x01\x12\x13\n" +
@@ -4236,8 +4479,12 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x0fLIFECYCLE_BUILD\x10\x04\x12\x14\n" +
 	"\x10LIFECYCLE_VERIFY\x10\x05\x12\x17\n" +
 	"\x13LIFECYCLE_DELIVERED\x10\x06\x12\x17\n" +
-	"\x13LIFECYCLE_ABANDONED\x10\a2\xd2\n" +
-	"\n" +
+	"\x13LIFECYCLE_ABANDONED\x10\a*p\n" +
+	"\x0eConsensusState\x12\x16\n" +
+	"\x12CONSENSUS_PROPOSED\x10\x00\x12\x14\n" +
+	"\x10CONSENSUS_VOTING\x10\x01\x12\x18\n" +
+	"\x14CONSENSUS_RECONCILED\x10\x02\x12\x16\n" +
+	"\x12CONSENSUS_REJECTED\x10\x032\xb4\v\n" +
 	"\fOrchestrator\x12R\n" +
 	"\rCreateFactory\x12\x1f.sati.central.v1.FactoryRequest\x1a .sati.central.v1.FactoryResponse\x12K\n" +
 	"\vStopFactory\x12\x1a.sati.central.v1.FactoryID\x1a .sati.central.v1.OperationStatus\x12E\n" +
@@ -4255,7 +4502,8 @@ const file_orchestrator_proto_rawDesc = "" +
 	"\x12CreateAssemblyLine\x12\x1d.sati.central.v1.SpecDocument\x1a\x1d.sati.central.v1.AssemblyLine\x12Z\n" +
 	"\x15GetAssemblyLineStatus\x12\x1f.sati.central.v1.AssemblyLineID\x1a .sati.central.v1.LifecycleStatus\x12W\n" +
 	"\x10AdvanceLifecycle\x12!.sati.central.v1.LifecycleAdvance\x1a .sati.central.v1.LifecycleStatus\x12P\n" +
-	"\vUpdateSkill\x12#.sati.central.v1.SkillUpdateRequest\x1a\x1c.sati.central.v1.MerkleProofB<Z:github.com/rds/aethereum-spine/aethereum-spine/internal/grpc/pb;pbb\x06proto3"
+	"\vUpdateSkill\x12#.sati.central.v1.SkillUpdateRequest\x1a\x1c.sati.central.v1.MerkleProof\x12`\n" +
+	"\x12ReconcileKnowledge\x12'.sati.central.v1.ReconciliationProposal\x1a\x1f.sati.central.v1.ConsensusEvent0\x01BDZBgithub.com/rds/aethereum-spine/aethereum-spine/internal/grpc/pb;pbb\x06proto3"
 
 var (
 	file_orchestrator_proto_rawDescOnce sync.Once
@@ -4269,8 +4517,8 @@ func file_orchestrator_proto_rawDescGZIP() []byte {
 	return file_orchestrator_proto_rawDescData
 }
 
-var file_orchestrator_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
+var file_orchestrator_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
+var file_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
 var file_orchestrator_proto_goTypes = []any{
 	(FactoryState)(0),               // 0: sati.central.v1.FactoryState
 	(VerificationEventType)(0),      // 1: sati.central.v1.VerificationEventType
@@ -4282,133 +4530,139 @@ var file_orchestrator_proto_goTypes = []any{
 	(VerdictDecision)(0),            // 7: sati.central.v1.VerdictDecision
 	(RequirementCategory)(0),        // 8: sati.central.v1.RequirementCategory
 	(LifecycleState)(0),             // 9: sati.central.v1.LifecycleState
-	(*Empty)(nil),                   // 10: sati.central.v1.Empty
-	(*OperationStatus)(nil),         // 11: sati.central.v1.OperationStatus
-	(*FactoryRequest)(nil),          // 12: sati.central.v1.FactoryRequest
-	(*FactoryResponse)(nil),         // 13: sati.central.v1.FactoryResponse
-	(*FactoryID)(nil),               // 14: sati.central.v1.FactoryID
-	(*FactoryStatus)(nil),           // 15: sati.central.v1.FactoryStatus
-	(*FactoryList)(nil),             // 16: sati.central.v1.FactoryList
-	(*FactoryEntry)(nil),            // 17: sati.central.v1.FactoryEntry
-	(*ActionProposal)(nil),          // 18: sati.central.v1.ActionProposal
-	(*VerificationEvent)(nil),       // 19: sati.central.v1.VerificationEvent
-	(*SafeResult)(nil),              // 20: sati.central.v1.SafeResult
-	(*UnsafeResult)(nil),            // 21: sati.central.v1.UnsafeResult
-	(*ErrorResult)(nil),             // 22: sati.central.v1.ErrorResult
-	(*ApprovalRequest)(nil),         // 23: sati.central.v1.ApprovalRequest
-	(*MerkleProof)(nil),             // 24: sati.central.v1.MerkleProof
-	(*VetoRequest)(nil),             // 25: sati.central.v1.VetoRequest
-	(*FitnessSnapshot)(nil),         // 26: sati.central.v1.FitnessSnapshot
-	(*FitnessMetrics)(nil),          // 27: sati.central.v1.FitnessMetrics
-	(*MetricValue)(nil),             // 28: sati.central.v1.MetricValue
-	(*CompositeMetricValue)(nil),    // 29: sati.central.v1.CompositeMetricValue
-	(*DomainMetricValue)(nil),       // 30: sati.central.v1.DomainMetricValue
-	(*DomainFitnessExtension)(nil),  // 31: sati.central.v1.DomainFitnessExtension
-	(*DomainMetricDeclaration)(nil), // 32: sati.central.v1.DomainMetricDeclaration
-	(*DataContext)(nil),             // 33: sati.central.v1.DataContext
-	(*ReflectionResult)(nil),        // 34: sati.central.v1.ReflectionResult
-	(*MoralWeighting)(nil),          // 35: sati.central.v1.MoralWeighting
-	(*BIlaraSegment)(nil),           // 36: sati.central.v1.BIlaraSegment
-	(*Briefing)(nil),                // 37: sati.central.v1.Briefing
-	(*VerdictQuery)(nil),            // 38: sati.central.v1.VerdictQuery
-	(*AnalystVerdict)(nil),          // 39: sati.central.v1.AnalystVerdict
-	(*RegistrationResult)(nil),      // 40: sati.central.v1.RegistrationResult
-	(*MetricReport)(nil),            // 41: sati.central.v1.MetricReport
-	(*SpecDocument)(nil),            // 42: sati.central.v1.SpecDocument
-	(*Requirement)(nil),             // 43: sati.central.v1.Requirement
-	(*ChallengeRecord)(nil),         // 44: sati.central.v1.ChallengeRecord
-	(*AcceptanceCriterion)(nil),     // 45: sati.central.v1.AcceptanceCriterion
-	(*DeploymentTarget)(nil),        // 46: sati.central.v1.DeploymentTarget
-	(*AssemblyLine)(nil),            // 47: sati.central.v1.AssemblyLine
-	(*AssemblyLineID)(nil),          // 48: sati.central.v1.AssemblyLineID
-	(*LifecycleStatus)(nil),         // 49: sati.central.v1.LifecycleStatus
-	(*LifecycleAdvance)(nil),        // 50: sati.central.v1.LifecycleAdvance
-	(*SkillUpdateRequest)(nil),      // 51: sati.central.v1.SkillUpdateRequest
-	nil,                             // 52: sati.central.v1.UnsafeResult.ViolationDetailsEntry
-	nil,                             // 53: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
-	nil,                             // 54: sati.central.v1.CompositeMetricValue.SubMetricsEntry
-	nil,                             // 55: sati.central.v1.MetricReport.MetricsEntry
+	(ConsensusState)(0),             // 10: sati.central.v1.ConsensusState
+	(*Empty)(nil),                   // 11: sati.central.v1.Empty
+	(*OperationStatus)(nil),         // 12: sati.central.v1.OperationStatus
+	(*FactoryRequest)(nil),          // 13: sati.central.v1.FactoryRequest
+	(*FactoryResponse)(nil),         // 14: sati.central.v1.FactoryResponse
+	(*FactoryID)(nil),               // 15: sati.central.v1.FactoryID
+	(*FactoryStatus)(nil),           // 16: sati.central.v1.FactoryStatus
+	(*FactoryList)(nil),             // 17: sati.central.v1.FactoryList
+	(*FactoryEntry)(nil),            // 18: sati.central.v1.FactoryEntry
+	(*ActionProposal)(nil),          // 19: sati.central.v1.ActionProposal
+	(*VerificationEvent)(nil),       // 20: sati.central.v1.VerificationEvent
+	(*SafeResult)(nil),              // 21: sati.central.v1.SafeResult
+	(*UnsafeResult)(nil),            // 22: sati.central.v1.UnsafeResult
+	(*ErrorResult)(nil),             // 23: sati.central.v1.ErrorResult
+	(*ApprovalRequest)(nil),         // 24: sati.central.v1.ApprovalRequest
+	(*MerkleProof)(nil),             // 25: sati.central.v1.MerkleProof
+	(*VetoRequest)(nil),             // 26: sati.central.v1.VetoRequest
+	(*FitnessSnapshot)(nil),         // 27: sati.central.v1.FitnessSnapshot
+	(*FitnessMetrics)(nil),          // 28: sati.central.v1.FitnessMetrics
+	(*MetricValue)(nil),             // 29: sati.central.v1.MetricValue
+	(*CompositeMetricValue)(nil),    // 30: sati.central.v1.CompositeMetricValue
+	(*DomainMetricValue)(nil),       // 31: sati.central.v1.DomainMetricValue
+	(*DomainFitnessExtension)(nil),  // 32: sati.central.v1.DomainFitnessExtension
+	(*DomainMetricDeclaration)(nil), // 33: sati.central.v1.DomainMetricDeclaration
+	(*DataContext)(nil),             // 34: sati.central.v1.DataContext
+	(*ReflectionResult)(nil),        // 35: sati.central.v1.ReflectionResult
+	(*MoralWeighting)(nil),          // 36: sati.central.v1.MoralWeighting
+	(*BIlaraSegment)(nil),           // 37: sati.central.v1.BIlaraSegment
+	(*Briefing)(nil),                // 38: sati.central.v1.Briefing
+	(*VerdictQuery)(nil),            // 39: sati.central.v1.VerdictQuery
+	(*AnalystVerdict)(nil),          // 40: sati.central.v1.AnalystVerdict
+	(*RegistrationResult)(nil),      // 41: sati.central.v1.RegistrationResult
+	(*MetricReport)(nil),            // 42: sati.central.v1.MetricReport
+	(*SpecDocument)(nil),            // 43: sati.central.v1.SpecDocument
+	(*Requirement)(nil),             // 44: sati.central.v1.Requirement
+	(*ChallengeRecord)(nil),         // 45: sati.central.v1.ChallengeRecord
+	(*AcceptanceCriterion)(nil),     // 46: sati.central.v1.AcceptanceCriterion
+	(*DeploymentTarget)(nil),        // 47: sati.central.v1.DeploymentTarget
+	(*AssemblyLine)(nil),            // 48: sati.central.v1.AssemblyLine
+	(*AssemblyLineID)(nil),          // 49: sati.central.v1.AssemblyLineID
+	(*LifecycleStatus)(nil),         // 50: sati.central.v1.LifecycleStatus
+	(*LifecycleAdvance)(nil),        // 51: sati.central.v1.LifecycleAdvance
+	(*SkillUpdateRequest)(nil),      // 52: sati.central.v1.SkillUpdateRequest
+	(*ReconciliationProposal)(nil),  // 53: sati.central.v1.ReconciliationProposal
+	(*ConsensusEvent)(nil),          // 54: sati.central.v1.ConsensusEvent
+	nil,                             // 55: sati.central.v1.UnsafeResult.ViolationDetailsEntry
+	nil,                             // 56: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
+	nil,                             // 57: sati.central.v1.CompositeMetricValue.SubMetricsEntry
+	nil,                             // 58: sati.central.v1.MetricReport.MetricsEntry
 }
 var file_orchestrator_proto_depIdxs = []int32{
-	31, // 0: sati.central.v1.FactoryRequest.domain_metrics:type_name -> sati.central.v1.DomainFitnessExtension
-	14, // 1: sati.central.v1.FactoryResponse.factory_id:type_name -> sati.central.v1.FactoryID
-	15, // 2: sati.central.v1.FactoryResponse.status:type_name -> sati.central.v1.FactoryStatus
-	26, // 3: sati.central.v1.FactoryResponse.fitness_baseline:type_name -> sati.central.v1.FitnessSnapshot
+	32, // 0: sati.central.v1.FactoryRequest.domain_metrics:type_name -> sati.central.v1.DomainFitnessExtension
+	15, // 1: sati.central.v1.FactoryResponse.factory_id:type_name -> sati.central.v1.FactoryID
+	16, // 2: sati.central.v1.FactoryResponse.status:type_name -> sati.central.v1.FactoryStatus
+	27, // 3: sati.central.v1.FactoryResponse.fitness_baseline:type_name -> sati.central.v1.FitnessSnapshot
 	0,  // 4: sati.central.v1.FactoryStatus.state:type_name -> sati.central.v1.FactoryState
-	17, // 5: sati.central.v1.FactoryList.factories:type_name -> sati.central.v1.FactoryEntry
-	14, // 6: sati.central.v1.FactoryEntry.factory_id:type_name -> sati.central.v1.FactoryID
-	15, // 7: sati.central.v1.FactoryEntry.status:type_name -> sati.central.v1.FactoryStatus
+	18, // 5: sati.central.v1.FactoryList.factories:type_name -> sati.central.v1.FactoryEntry
+	15, // 6: sati.central.v1.FactoryEntry.factory_id:type_name -> sati.central.v1.FactoryID
+	16, // 7: sati.central.v1.FactoryEntry.status:type_name -> sati.central.v1.FactoryStatus
 	1,  // 8: sati.central.v1.VerificationEvent.event_type:type_name -> sati.central.v1.VerificationEventType
-	20, // 9: sati.central.v1.VerificationEvent.safe_result:type_name -> sati.central.v1.SafeResult
-	21, // 10: sati.central.v1.VerificationEvent.unsafe_result:type_name -> sati.central.v1.UnsafeResult
-	22, // 11: sati.central.v1.VerificationEvent.error_result:type_name -> sati.central.v1.ErrorResult
+	21, // 9: sati.central.v1.VerificationEvent.safe_result:type_name -> sati.central.v1.SafeResult
+	22, // 10: sati.central.v1.VerificationEvent.unsafe_result:type_name -> sati.central.v1.UnsafeResult
+	23, // 11: sati.central.v1.VerificationEvent.error_result:type_name -> sati.central.v1.ErrorResult
 	2,  // 12: sati.central.v1.SafeResult.proof_tier:type_name -> sati.central.v1.SafetyTierProto
-	52, // 13: sati.central.v1.UnsafeResult.violation_details:type_name -> sati.central.v1.UnsafeResult.ViolationDetailsEntry
-	27, // 14: sati.central.v1.FitnessSnapshot.metrics:type_name -> sati.central.v1.FitnessMetrics
-	53, // 15: sati.central.v1.FitnessSnapshot.domain_extensions:type_name -> sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
-	28, // 16: sati.central.v1.FitnessMetrics.safety_compliance:type_name -> sati.central.v1.MetricValue
-	28, // 17: sati.central.v1.FitnessMetrics.audit_integrity:type_name -> sati.central.v1.MetricValue
-	28, // 18: sati.central.v1.FitnessMetrics.dhamma_alignment:type_name -> sati.central.v1.MetricValue
-	29, // 19: sati.central.v1.FitnessMetrics.system_performance:type_name -> sati.central.v1.CompositeMetricValue
-	28, // 20: sati.central.v1.FitnessMetrics.operational_cost:type_name -> sati.central.v1.MetricValue
+	55, // 13: sati.central.v1.UnsafeResult.violation_details:type_name -> sati.central.v1.UnsafeResult.ViolationDetailsEntry
+	28, // 14: sati.central.v1.FitnessSnapshot.metrics:type_name -> sati.central.v1.FitnessMetrics
+	56, // 15: sati.central.v1.FitnessSnapshot.domain_extensions:type_name -> sati.central.v1.FitnessSnapshot.DomainExtensionsEntry
+	29, // 16: sati.central.v1.FitnessMetrics.safety_compliance:type_name -> sati.central.v1.MetricValue
+	29, // 17: sati.central.v1.FitnessMetrics.audit_integrity:type_name -> sati.central.v1.MetricValue
+	29, // 18: sati.central.v1.FitnessMetrics.dhamma_alignment:type_name -> sati.central.v1.MetricValue
+	30, // 19: sati.central.v1.FitnessMetrics.system_performance:type_name -> sati.central.v1.CompositeMetricValue
+	29, // 20: sati.central.v1.FitnessMetrics.operational_cost:type_name -> sati.central.v1.MetricValue
 	3,  // 21: sati.central.v1.MetricValue.status:type_name -> sati.central.v1.MetricStatus
-	54, // 22: sati.central.v1.CompositeMetricValue.sub_metrics:type_name -> sati.central.v1.CompositeMetricValue.SubMetricsEntry
+	57, // 22: sati.central.v1.CompositeMetricValue.sub_metrics:type_name -> sati.central.v1.CompositeMetricValue.SubMetricsEntry
 	3,  // 23: sati.central.v1.CompositeMetricValue.status:type_name -> sati.central.v1.MetricStatus
 	3,  // 24: sati.central.v1.DomainMetricValue.status:type_name -> sati.central.v1.MetricStatus
-	32, // 25: sati.central.v1.DomainFitnessExtension.metrics:type_name -> sati.central.v1.DomainMetricDeclaration
+	33, // 25: sati.central.v1.DomainFitnessExtension.metrics:type_name -> sati.central.v1.DomainMetricDeclaration
 	4,  // 26: sati.central.v1.DomainMetricDeclaration.direction:type_name -> sati.central.v1.MetricDirection
 	5,  // 27: sati.central.v1.DomainMetricDeclaration.escalation_operator:type_name -> sati.central.v1.ThresholdOperator
-	35, // 28: sati.central.v1.ReflectionResult.moral_weighting:type_name -> sati.central.v1.MoralWeighting
-	36, // 29: sati.central.v1.ReflectionResult.retrieved_segments:type_name -> sati.central.v1.BIlaraSegment
+	36, // 28: sati.central.v1.ReflectionResult.moral_weighting:type_name -> sati.central.v1.MoralWeighting
+	37, // 29: sati.central.v1.ReflectionResult.retrieved_segments:type_name -> sati.central.v1.BIlaraSegment
 	6,  // 30: sati.central.v1.MoralWeighting.root:type_name -> sati.central.v1.MoralRoot
 	7,  // 31: sati.central.v1.AnalystVerdict.verdict:type_name -> sati.central.v1.VerdictDecision
-	55, // 32: sati.central.v1.MetricReport.metrics:type_name -> sati.central.v1.MetricReport.MetricsEntry
-	43, // 33: sati.central.v1.SpecDocument.requirements:type_name -> sati.central.v1.Requirement
-	44, // 34: sati.central.v1.SpecDocument.challenges:type_name -> sati.central.v1.ChallengeRecord
-	45, // 35: sati.central.v1.SpecDocument.acceptance_criteria:type_name -> sati.central.v1.AcceptanceCriterion
-	46, // 36: sati.central.v1.SpecDocument.deployment_target:type_name -> sati.central.v1.DeploymentTarget
+	58, // 32: sati.central.v1.MetricReport.metrics:type_name -> sati.central.v1.MetricReport.MetricsEntry
+	44, // 33: sati.central.v1.SpecDocument.requirements:type_name -> sati.central.v1.Requirement
+	45, // 34: sati.central.v1.SpecDocument.challenges:type_name -> sati.central.v1.ChallengeRecord
+	46, // 35: sati.central.v1.SpecDocument.acceptance_criteria:type_name -> sati.central.v1.AcceptanceCriterion
+	47, // 36: sati.central.v1.SpecDocument.deployment_target:type_name -> sati.central.v1.DeploymentTarget
 	8,  // 37: sati.central.v1.Requirement.category:type_name -> sati.central.v1.RequirementCategory
 	9,  // 38: sati.central.v1.AssemblyLine.current_state:type_name -> sati.central.v1.LifecycleState
 	9,  // 39: sati.central.v1.LifecycleStatus.state:type_name -> sati.central.v1.LifecycleState
 	9,  // 40: sati.central.v1.LifecycleAdvance.target_state:type_name -> sati.central.v1.LifecycleState
-	30, // 41: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry.value:type_name -> sati.central.v1.DomainMetricValue
-	12, // 42: sati.central.v1.Orchestrator.CreateFactory:input_type -> sati.central.v1.FactoryRequest
-	14, // 43: sati.central.v1.Orchestrator.StopFactory:input_type -> sati.central.v1.FactoryID
-	10, // 44: sati.central.v1.Orchestrator.ListFactories:input_type -> sati.central.v1.Empty
-	18, // 45: sati.central.v1.Orchestrator.SubmitProposal:input_type -> sati.central.v1.ActionProposal
-	23, // 46: sati.central.v1.Orchestrator.ApproveAction:input_type -> sati.central.v1.ApprovalRequest
-	25, // 47: sati.central.v1.Orchestrator.VetoAction:input_type -> sati.central.v1.VetoRequest
-	10, // 48: sati.central.v1.Orchestrator.GetFitnessSnapshot:input_type -> sati.central.v1.Empty
-	31, // 49: sati.central.v1.Orchestrator.RegisterDomainMetrics:input_type -> sati.central.v1.DomainFitnessExtension
-	33, // 50: sati.central.v1.Orchestrator.GetDhammaContext:input_type -> sati.central.v1.DataContext
-	37, // 51: sati.central.v1.Orchestrator.WriteAnalystBriefing:input_type -> sati.central.v1.Briefing
-	38, // 52: sati.central.v1.Orchestrator.ReadAnalystVerdict:input_type -> sati.central.v1.VerdictQuery
-	41, // 53: sati.central.v1.Orchestrator.ReportMetrics:input_type -> sati.central.v1.MetricReport
-	42, // 54: sati.central.v1.Orchestrator.CreateAssemblyLine:input_type -> sati.central.v1.SpecDocument
-	48, // 55: sati.central.v1.Orchestrator.GetAssemblyLineStatus:input_type -> sati.central.v1.AssemblyLineID
-	50, // 56: sati.central.v1.Orchestrator.AdvanceLifecycle:input_type -> sati.central.v1.LifecycleAdvance
-	51, // 57: sati.central.v1.Orchestrator.UpdateSkill:input_type -> sati.central.v1.SkillUpdateRequest
-	13, // 58: sati.central.v1.Orchestrator.CreateFactory:output_type -> sati.central.v1.FactoryResponse
-	11, // 59: sati.central.v1.Orchestrator.StopFactory:output_type -> sati.central.v1.OperationStatus
-	16, // 60: sati.central.v1.Orchestrator.ListFactories:output_type -> sati.central.v1.FactoryList
-	19, // 61: sati.central.v1.Orchestrator.SubmitProposal:output_type -> sati.central.v1.VerificationEvent
-	24, // 62: sati.central.v1.Orchestrator.ApproveAction:output_type -> sati.central.v1.MerkleProof
-	11, // 63: sati.central.v1.Orchestrator.VetoAction:output_type -> sati.central.v1.OperationStatus
-	26, // 64: sati.central.v1.Orchestrator.GetFitnessSnapshot:output_type -> sati.central.v1.FitnessSnapshot
-	40, // 65: sati.central.v1.Orchestrator.RegisterDomainMetrics:output_type -> sati.central.v1.RegistrationResult
-	34, // 66: sati.central.v1.Orchestrator.GetDhammaContext:output_type -> sati.central.v1.ReflectionResult
-	11, // 67: sati.central.v1.Orchestrator.WriteAnalystBriefing:output_type -> sati.central.v1.OperationStatus
-	39, // 68: sati.central.v1.Orchestrator.ReadAnalystVerdict:output_type -> sati.central.v1.AnalystVerdict
-	11, // 69: sati.central.v1.Orchestrator.ReportMetrics:output_type -> sati.central.v1.OperationStatus
-	47, // 70: sati.central.v1.Orchestrator.CreateAssemblyLine:output_type -> sati.central.v1.AssemblyLine
-	49, // 71: sati.central.v1.Orchestrator.GetAssemblyLineStatus:output_type -> sati.central.v1.LifecycleStatus
-	49, // 72: sati.central.v1.Orchestrator.AdvanceLifecycle:output_type -> sati.central.v1.LifecycleStatus
-	24, // 73: sati.central.v1.Orchestrator.UpdateSkill:output_type -> sati.central.v1.MerkleProof
-	58, // [58:74] is the sub-list for method output_type
-	42, // [42:58] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	10, // 41: sati.central.v1.ConsensusEvent.state:type_name -> sati.central.v1.ConsensusState
+	31, // 42: sati.central.v1.FitnessSnapshot.DomainExtensionsEntry.value:type_name -> sati.central.v1.DomainMetricValue
+	13, // 43: sati.central.v1.Orchestrator.CreateFactory:input_type -> sati.central.v1.FactoryRequest
+	15, // 44: sati.central.v1.Orchestrator.StopFactory:input_type -> sati.central.v1.FactoryID
+	11, // 45: sati.central.v1.Orchestrator.ListFactories:input_type -> sati.central.v1.Empty
+	19, // 46: sati.central.v1.Orchestrator.SubmitProposal:input_type -> sati.central.v1.ActionProposal
+	24, // 47: sati.central.v1.Orchestrator.ApproveAction:input_type -> sati.central.v1.ApprovalRequest
+	26, // 48: sati.central.v1.Orchestrator.VetoAction:input_type -> sati.central.v1.VetoRequest
+	11, // 49: sati.central.v1.Orchestrator.GetFitnessSnapshot:input_type -> sati.central.v1.Empty
+	32, // 50: sati.central.v1.Orchestrator.RegisterDomainMetrics:input_type -> sati.central.v1.DomainFitnessExtension
+	34, // 51: sati.central.v1.Orchestrator.GetDhammaContext:input_type -> sati.central.v1.DataContext
+	38, // 52: sati.central.v1.Orchestrator.WriteAnalystBriefing:input_type -> sati.central.v1.Briefing
+	39, // 53: sati.central.v1.Orchestrator.ReadAnalystVerdict:input_type -> sati.central.v1.VerdictQuery
+	42, // 54: sati.central.v1.Orchestrator.ReportMetrics:input_type -> sati.central.v1.MetricReport
+	43, // 55: sati.central.v1.Orchestrator.CreateAssemblyLine:input_type -> sati.central.v1.SpecDocument
+	49, // 56: sati.central.v1.Orchestrator.GetAssemblyLineStatus:input_type -> sati.central.v1.AssemblyLineID
+	51, // 57: sati.central.v1.Orchestrator.AdvanceLifecycle:input_type -> sati.central.v1.LifecycleAdvance
+	52, // 58: sati.central.v1.Orchestrator.UpdateSkill:input_type -> sati.central.v1.SkillUpdateRequest
+	53, // 59: sati.central.v1.Orchestrator.ReconcileKnowledge:input_type -> sati.central.v1.ReconciliationProposal
+	14, // 60: sati.central.v1.Orchestrator.CreateFactory:output_type -> sati.central.v1.FactoryResponse
+	12, // 61: sati.central.v1.Orchestrator.StopFactory:output_type -> sati.central.v1.OperationStatus
+	17, // 62: sati.central.v1.Orchestrator.ListFactories:output_type -> sati.central.v1.FactoryList
+	20, // 63: sati.central.v1.Orchestrator.SubmitProposal:output_type -> sati.central.v1.VerificationEvent
+	25, // 64: sati.central.v1.Orchestrator.ApproveAction:output_type -> sati.central.v1.MerkleProof
+	12, // 65: sati.central.v1.Orchestrator.VetoAction:output_type -> sati.central.v1.OperationStatus
+	27, // 66: sati.central.v1.Orchestrator.GetFitnessSnapshot:output_type -> sati.central.v1.FitnessSnapshot
+	41, // 67: sati.central.v1.Orchestrator.RegisterDomainMetrics:output_type -> sati.central.v1.RegistrationResult
+	35, // 68: sati.central.v1.Orchestrator.GetDhammaContext:output_type -> sati.central.v1.ReflectionResult
+	12, // 69: sati.central.v1.Orchestrator.WriteAnalystBriefing:output_type -> sati.central.v1.OperationStatus
+	40, // 70: sati.central.v1.Orchestrator.ReadAnalystVerdict:output_type -> sati.central.v1.AnalystVerdict
+	12, // 71: sati.central.v1.Orchestrator.ReportMetrics:output_type -> sati.central.v1.OperationStatus
+	48, // 72: sati.central.v1.Orchestrator.CreateAssemblyLine:output_type -> sati.central.v1.AssemblyLine
+	50, // 73: sati.central.v1.Orchestrator.GetAssemblyLineStatus:output_type -> sati.central.v1.LifecycleStatus
+	50, // 74: sati.central.v1.Orchestrator.AdvanceLifecycle:output_type -> sati.central.v1.LifecycleStatus
+	25, // 75: sati.central.v1.Orchestrator.UpdateSkill:output_type -> sati.central.v1.MerkleProof
+	54, // 76: sati.central.v1.Orchestrator.ReconcileKnowledge:output_type -> sati.central.v1.ConsensusEvent
+	60, // [60:77] is the sub-list for method output_type
+	43, // [43:60] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_orchestrator_proto_init() }
@@ -4431,8 +4685,8 @@ func file_orchestrator_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchestrator_proto_rawDesc), len(file_orchestrator_proto_rawDesc)),
-			NumEnums:      10,
-			NumMessages:   46,
+			NumEnums:      11,
+			NumMessages:   48,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -125,6 +125,20 @@ impl Tier1SafetyRail {
             author: "analyst-droid".to_string(),
             authored_at_ms: 1775754600000,
         });
+
+        // Constraint 5 — stasis_tier2_calls_tier1_only
+        let _ = self.z3_engine.add_constraint(PolicyConstraint {
+            id: ConstraintId::new([5u8; 16]),
+            name: "stasis_tier2_calls_tier1_only".to_string(),
+            assertion: crate::ConstraintAssertion::SmtLib2(
+                "(=> (str.contains target_path \"protoplasm/policies/constraints\") is_security_adjacent)".to_string(),
+            ),
+            category: crate::ConstraintCategory::SafetyCompliance,
+            severity: crate::ConstraintSeverity::Mandatory,
+            justification: "Modifications to the Tier 2 CHR constraint layer require the Translucent Gate to preserve the stasis_tier2_calls_tier1_only invariant".to_string(),
+            author: "analyst-droid".to_string(),
+            authored_at_ms: 1775680800003,
+        });
     }
 }
 
@@ -260,6 +274,7 @@ impl SafetyRail for Tier1SafetyRail {
             "audit_no_merkle_deletion",
             "security_no_unverified_proto_change",
             "safety_no_prolog_injection",
+            "stasis_tier2_calls_tier1_only",
         ];
         if !SUPPORTED_CONSTRAINT_NAMES.contains(&constraint.name.as_str()) {
             return crate::RegistrationResult::UnsupportedAssertionKind {

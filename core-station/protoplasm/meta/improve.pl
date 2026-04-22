@@ -10,44 +10,43 @@
 :- use_module('verify').
 :- use_module('../tests/golden/default').
 
-/** <module> Meta-Improvement Loop
+/** <module> STASIS Self-Improvement Loop (Phase 10)
  * 
- * Provides predicates for self-modifying agents to optimize their own skills.
- * Orchestrates the Observe -> Introspect -> Construct -> Evaluate -> Propose loop.
+ * Implements the 6-state evolutionary loop defined in STASIS-SELF-IMPROVEMENT.md:
+ * 1. Observe: Identify candidate skill
+ * 2. Measure: Record performance baseline (Latency)
+ * 3. Introspect: Analyze current implementation
+ * 4. Hypothesize: Propose optimized variant (logic-tuner)
+ * 5. Evaluate: Sandbox verification (non-regression)
+ * 6. Commit: Authorized mutation via safety_bridge
  */
 
 %% optimize_skill(+SkillHead) is det.
-%
-% Baseline optimization entry point for manual triggering.
 optimize_skill(SkillHead) :-
-    improve_if_slow(SkillHead, 0.0). % Force optimization for testing
+    improve_if_slow(SkillHead, 0.0).
 
 %% improve_if_slow(+SkillHead, +Threshold) is det.
-%
-% The core evolutionary loop.
 improve_if_slow(SkillHead, Threshold) :-
-    % 1. Observe: Measure current performance
-    measure_performance(SkillHead, AvgLatency, Samples),
-    (   (AvgLatency >= Threshold, Samples >= 100)
-    ->  % 2. Introspect: Get current definition
+    % 1. Observe & 2. Measure
+    measure_performance(SkillHead, AvgLatency, _Samples),
+    (   AvgLatency >= Threshold
+    ->  % 3. Introspect
         inspect_predicate(SkillHead, CurrentClauses),
+        emit_metric('stasis.improvement.observation_total', 1),
         
-        % Emit observation metric
-        emit_metric('aethereum_spine.prolog.improvement_observation_total', 1),
-        
-        % 3. Construct: Generate candidate optimization
+        % 4. Hypothesize
         propose_improvement(CurrentClauses, NewClauses),
         
-        % 4. Evaluate & Propose: Verify invariants and sandbox results
+        % 5. Evaluate & 6. Commit
         forall(member(NewClause, NewClauses), (
              (check_invariants(NewClause), \+ clause_exists(NewClause))
              -> (   evaluate_candidate(SkillHead, NewClause, Verdict),
-                    ( Verdict \= regressed
+                    (  Verdict \= regressed
                     -> ( safe_assert(NewClause),
-                         emit_metric('aethereum_spine.prolog.improvement_success_total', 1)
+                         emit_metric('stasis.improvement.success_total', 1)
                        )
-                    ;  ( print_message(warning, regression_detected(NewClause)),
-                         emit_metric('aethereum_spine.prolog.improvement_regression_veto_total', 1)
+                    ;  ( emit_metric('stasis.improvement.regression_veto_total', 1),
+                         print_message(warning, regression_detected(NewClause))
                        )
                     )
                 )
@@ -57,59 +56,60 @@ improve_if_slow(SkillHead, Threshold) :-
     ).
 
 %% evaluate_candidate(+Head, +NewClause, -Verdict) is det.
-%
-% Evaluates a candidate clause in a sandbox against golden test sets.
 evaluate_candidate(Head, NewClause, Verdict) :-
-    % 1. Measure Old Correctness
-    strip_module(Head, _Module, PlainHead),
+    % 1. Setup Golden Baseline
+    strip_module(Head, Module, PlainHead),
     functor(PlainHead, Name, _),
-    (   golden_input(Name, Inputs)
-    ->  true
-    ;   Inputs = []
-    ),
-    test_predicate(Head, Inputs, OldResults),
-    
-    % 2. Evaluate candidate correctness manually
-    (   match_clause(NewClause, Inputs, NewResults)
-    ->  true
-    ;   NewResults = error(logic_regression)
+    (  catch(golden_data:golden_input(Name, Inputs), _, fail)
+    -> true
+    ;  Inputs = []
     ),
     
-    % 3. Compare Results
-    (   NewResults \= OldResults
+    % 2. Measure Baseline Success Set
+    test_predicate(Module:Head, Inputs, OldResults),
+    
+    % 3. Measure Candidate Success Set (Sandbox)
+    evaluate_in_sandbox(PlainHead, NewClause, Inputs, NewResults),
+    
+    % 4. Non-Regression Verdict
+    % Comparison ignores module prefixes to allow sandbox/user parity.
+    maplist(strip_result_module, OldResults, StrippedOld),
+    maplist(strip_result_module, NewResults, StrippedNew),
+    sort(StrippedOld, SortedOld),
+    sort(StrippedNew, SortedNew),
+    (   SortedNew \= SortedOld
     ->  Verdict = regressed
     ;   Verdict = equivalent
     ).
 
-match_clause((Head :- Body), Inputs, Results) :-
-    strip_module(Head, _, PlainHead),
-    functor(PlainHead, Name, Arity),
-    findall(success(ArgTemplate), (
+% Helper: success(user:fib(10,55)) -> success(fib(10,55))
+strip_result_module(success(M:Term), success(Term)) :- !, nonvar(M).
+strip_result_module(Other, Other).
+
+%% evaluate_in_sandbox(+PlainHeadSpec, +Clause, +Inputs, -Results) is det.
+evaluate_in_sandbox(_HeadSpec, Clause, Inputs, Results) :-
+    % Determine HeadTemplate and Body from Clause
+    ( Clause = (HeadTemplate :- Body) -> true ; ( HeadTemplate = Clause, Body = true ) ),
+    strip_module(HeadTemplate, _, PlainHeadTemplate),
+    functor(PlainHeadTemplate, _Name, Arity),
+    findall(Output, (
         member(Input, Inputs),
-        copy_term((PlainHead, Body), (ArgTemplate, TestBody)),
-        (  is_list(Input) 
-        -> ArgTemplate =.. [Name|Input] 
-        ;  Arity == 1 
-        -> arg(1, ArgTemplate, Input)
-        ;  arg(1, ArgTemplate, Arg1), % For fib(N, F), Input is N
-        Arg1 = Input
-        ),
-        catch(TestBody, _, fail)
+        copy_term((PlainHeadTemplate, Body), (H, B)),
+        % Bind input to first arg
+        ( Arity > 0 -> (arg(1, H, Input) -> true ; true ) ; true ),
+        ( catch(call_with_time_limit(1, B), _, fail)
+        -> Output = success(H)
+        ;  Output = fail
+        )
     ), Results).
 
 clause_exists((Head :- Body)) :- !, clause(Head, Body).
 clause_exists(Head) :- clause(Head, true).
 
 %% propose_improvement(+CurrentClauses, -NewClauses) is det.
-%
-% Phase 8/9 Strategy: Identity mapping for established safety baseline.
 propose_improvement(Clauses, Clauses).
 
 % Message formatting
 :- multifile prolog:message//1.
-prolog:message(proposing_improvement(Clause)) -->
-    [ 'Proposing self-improvement: ~w'-[Clause] ].
 prolog:message(regression_detected(Clause)) -->
-    [ 'Regression detected for candidate: ~w. Discarding.'-[Clause] ].
-prolog:message(optimized(Head)) -->
-    [ 'Executing optimized version of ~w'-[Head] ].
+    [ 'STASIS Regression Veto: Candidate discarded: ~w'-[Clause] ].

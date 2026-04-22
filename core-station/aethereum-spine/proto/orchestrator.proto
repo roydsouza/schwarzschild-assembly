@@ -97,6 +97,12 @@ service Orchestrator {
   // UpdateSkill proposes a new version of an agent's skill.
   // Must pass Safety Rail. Returns a MerkleProof on success.
   rpc UpdateSkill(SkillUpdateRequest)       returns (MerkleProof);
+
+  // ── Collective Intelligence (Phase 12) ──────────────────────────────────
+  
+  // ReconcileKnowledge proposes a local skill for global station reconciliation.
+  // Returns a stream of ConsensusEvents (Proposed → Voting → Reconciled/Rejected).
+  rpc ReconcileKnowledge(ReconciliationProposal) returns (stream ConsensusEvent);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -812,4 +818,46 @@ message SkillUpdateRequest {
   bytes new_content = 4;
   // rationale explains the improvement (or fix).
   string rationale = 5;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Collective Intelligence messages (Phase 12)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ReconciliationProposal describes a local skill for global promotion.
+message ReconciliationProposal {
+  // proposal_id is the unique UUID for this consensus event.
+  string proposal_id = 1;
+  // source_agent_id identifies the ship that learned the skill.
+  string source_agent_id = 2;
+  // term_atoms is the Prolog representation of the logic.
+  string term_atoms = 3;
+  // fitness_score is the measured performance impact [0,1].
+  double fitness_score = 4;
+  // merkle_root is the ship's current audit trail root.
+  string merkle_root = 5;
+  // merkle_proof is the witness for this specific mutation.
+  repeated string merkle_proof = 6;
+}
+
+// ConsensusEvent describes a step in the reconciliation lifecycle.
+message ConsensusEvent {
+  // proposal_id matches the ReconciliationProposal.
+  string proposal_id = 1;
+  // state is the current phase of consensus.
+  ConsensusState state = 2;
+  // voters is the count of ships that have verified the proposal.
+  int32 voters = 3;
+  // quorum_reached is true if the station-wide threshold is met.
+  bool quorum_reached = 4;
+  // message is a human-readable status note.
+  string message = 5;
+}
+
+// ConsensusState enumerates the phases of the reconciliation protocol.
+enum ConsensusState {
+  CONSENSUS_PROPOSED = 0;
+  CONSENSUS_VOTING = 1;
+  CONSENSUS_RECONCILED = 2;
+  CONSENSUS_REJECTED = 3;
 }

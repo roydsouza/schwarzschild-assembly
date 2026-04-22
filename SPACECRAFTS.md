@@ -1,6 +1,4 @@
-# Spacecraft Architecture: The Shell and the Protoplasm
-
-In the Schwarzschild meta-factory, a **Spacecraft** (Application) is defined by a dual-layered existence: a hardened, static **Shell** and a malleable, evolving **Protoplasm**.
+In the Schwarzschild meta-factory, a **Spacecraft** (Application) is defined by a dual-layered existence: a hardened, static **Shell** and a malleable, evolving **Protoplasm**. This architecture is the physical embodiment of the **Schwarzschild Radius** policy—creating a structural "event horizon" that prevents non-deterministic **AI Slop** from corrupting system invariants.
 
 ## 1. The Execution Shell (The "Body")
 

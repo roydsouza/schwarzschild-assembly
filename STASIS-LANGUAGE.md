@@ -15,18 +15,19 @@ language — it is a structured discipline for writing SWI-Prolog code that is s
 enough for autonomous operation.
 
 The word *stasis* means stable equilibrium: a system that maintains itself without
-external intervention. This is the goal of the Dark Factory — autonomous, self-correcting
+external intervention. This is the goal of the Dark Factory—autonomous, self-correcting
 operation within formally verified safety boundaries. STASIS provides the technical
-substrate that makes that goal achievable.
+substrate that makes that goal achievable by eliminating the non-determinism and
+hallucinatory logic often found in unconstrained **AI Slop**.
 
 ---
 
 ## The Problem STASIS Solves
 
-### Turing-completeness is unsafe in autonomous systems
+### Turing-completeness and "Vibe Coding" are unsafe in autonomous systems
 
 Standard Prolog is Turing-complete. A self-evolving agent using unrestricted Prolog
-can accidentally (or maliciously) introduce:
+or relying on **Vibe Coding** patterns can accidentally (or maliciously) introduce:
 
 - **Non-terminating recursion** — safety checks that loop forever, hanging the orchestrator
 - **Unbounded side effects** — filesystem access, shell execution, network calls from logic code
@@ -159,6 +160,9 @@ intrinsic introspection — the policy layer explains its own decisions.
 CHR also excels at **declarative state evolution**: the spacecraft doesn't change its code,
 it updates its constraint store. The boundary between "what the spacecraft knows" and
 "what the spacecraft does" remains clean.
+
+**Tier 2 (Declarative Constraints):** CHR rules that restrict the shape of valid knowledge.
+**Tier 3 (Invariants & Audit):** Hardened Prolog gates that perform synchronous recursive scanning of terms and maintain a Merkle-signed audit trail for every mutation.
 
 ### Tier 2 boundary rule
 
@@ -418,6 +422,64 @@ agents/prolog-substrate/          ← STASIS substrate root (directory name lega
 *Note: `agents/prolog-substrate/` retains its directory name for filesystem compatibility.
 All prose documentation uses "STASIS substrate." A directory rename to `agents/stasis-substrate/`
 is deferred as a future cleanup task — it requires updating all shell script path references.*
+
+---
+
+## Station Relationships (decided 2026-04-22)
+
+### Where STASIS Lives
+
+STASIS is implemented inside `schwarzschild-assembly/core-station/protoplasm/`. It does
+**not** live in `shapeshifter/`, despite an earlier reference in the schwarzschild-assembly
+README describing it as "provided by shapeshifter." That was aspirational design that was
+never implemented. STASIS belongs to this project.
+
+### Relationship with Shapeshifter
+
+Shapeshifter (`~/antigravity/shapeshifter/`) is a **runtime skill-parameterization DSL**
+embedded inside individual agents. It uses Python S-expressions to let an agent tune its
+own skill parameters and propose body mutations at runtime.
+
+STASIS is a **station-wide policy enforcement substrate**. It decides whether proposed
+mutations are allowed.
+
+The intended integration (Shapeshifter Phase 4):
+
+```
+Agent runtime
+  └─ Shapeshifter evaluator
+       └─ proposes mutation (quote/eval, gas-limited)
+            └─ submits to STASIS safe_assert pipeline
+                 ├─ Tier 2 CHR scan
+                 ├─ Tier 1 invariant check
+                 ├─ Merkle commit
+                 └─ → pending → Roy approves via control plane
+```
+
+This integration is not yet built. Until it is, Shapeshifter and STASIS operate
+independently. Shapeshifter proposes in Python; STASIS enforces in Prolog.
+
+### Planned Extraction to `stasis-language/`
+
+When Shapeshifter Phase 4 is ready to consume STASIS, this project will extract the
+general runtime (safe_assert pipeline, Merkle bridge, OTel bridge, tier runtime, linter,
+generic meta/ modules) to `~/antigravity/stasis-language/` as a standalone station
+substrate. schwarzschild-assembly will then depend on it as a submodule.
+
+The **extraction seam** divides the code into two parts:
+
+| General runtime → `stasis-language/` | Assembly-specific → stays here |
+|---|---|
+| `core/safety_bridge.pl` | Spacecraft CHR policy rules |
+| `core/merkle_bridge.pl` | Spacecraft Tier 1 invariant overrides |
+| `core/otel_bridge.pl` | `core/safety_bridge.pl` integration glue |
+| `meta/improve.pl`, `introspect.pl`, `verify.pl`, `fitness.pl` | Z3 policy stubs for spacecraft domain |
+| Tier 1 linter (`validate-stasis-tier1.pl`) | |
+| Generic `policies/invariants.pl` defaults | |
+
+**Do not extract until the trigger condition is met:** Shapeshifter Phase 4 mutation
+gating is actively ready to integrate. Premature extraction adds migration cost before
+there is a second consumer to justify it. See `dsl-008` in root `TASKS.md`.
 
 ---
 

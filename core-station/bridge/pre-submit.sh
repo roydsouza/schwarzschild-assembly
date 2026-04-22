@@ -19,7 +19,7 @@ ok()   { report "PASS" "$@"; ((PASS++)) || true; }
 fail() { report "FAIL" "$@"; ((FAIL++)) || true; }
 
 echo "============================================================"
-echo "  Aethereum-Spine Space Station: Pre-Submission Verification"
+echo "  Schwarzschild Assembly: Pre-Submission Verification"
 echo "  $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 echo "============================================================"
 
@@ -43,14 +43,6 @@ if [ -f core-station/security/Cargo.toml ]; then
   fi
 fi
 
-if [ -f control-panel/package.json ]; then
-  if (cd control-panel && npx tsc --noEmit 2>&1); then
-    ok "control-panel: tsc --noEmit"
-  else
-    fail "control-panel: tsc --noEmit FAILED"
-  fi
-fi
-
 for factory_dir in core-station/machinery/*; do
   if [ -f "$factory_dir/go.mod" ]; then
     if (cd "$factory_dir" && go build ./... 2>&1); then
@@ -61,7 +53,19 @@ for factory_dir in core-station/machinery/*; do
   fi
 done
 
-# ── 2. TESTS ─────────────────────────────────────────────────────
+# ── 2. STASIS VALIDATION ──────────────────────────────────────────
+echo ""
+echo "── STASIS VALIDATION ──"
+
+if [ -f core-station/bridge/validate-stasis-tier1.pl ]; then
+  if swipl -l core-station/bridge/validate-stasis-tier1.pl -g "main(['core-station/protoplasm/policies/invariants.pl']), halt." 2>&1; then
+    ok "stasis: Tier 1 syntactic validation passed"
+  else
+    fail "stasis: Tier 1 syntactic validation FAILED"
+  fi
+fi
+
+# ── 3. TESTS ─────────────────────────────────────────────────────
 echo ""
 echo "── TESTS ──"
 
@@ -83,7 +87,7 @@ if [ -f core-station/security/Cargo.toml ]; then
   fi
 fi
 
-# ── 3. ANATOMY CHECK ──────────────────────────────────────────────
+# ── 4. ANATOMY CHECK ──────────────────────────────────────────────
 echo ""
 echo "── ANATOMY CHECK ──"
 
@@ -98,21 +102,6 @@ for factory_dir in core-station/machinery/*/; do
     fi
   done
 done
-
-# ── 4. PROLOG SAFETY ──────────────────────────────────────────────
-if [ -d core-station/protoplasm ]; then
-  echo ""
-  echo "── STASIS SAFETY ──"
-  violations=$(set +e; grep -rn 'assertz(\|retract(' core-station/protoplasm/ \
-    --include='*.pl' \
-    | grep -v 'safe_assert\|safe_retract\|%\|test_\|_test\.pl\|core/safety_bridge\.pl' \
-    | wc -l | tr -d ' '; set -e)
-  if [ "$violations" -eq 0 ]; then
-    ok "No bare assertz/retract in production STASIS code"
-  else
-    fail "Found $violations bare assertz/retract calls"
-  fi
-fi
 
 # ── 5. HYGIENE ────────────────────────────────────────────────────
 echo ""

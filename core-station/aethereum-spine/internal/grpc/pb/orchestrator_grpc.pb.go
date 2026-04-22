@@ -42,6 +42,7 @@ const (
 	Orchestrator_GetAssemblyLineStatus_FullMethodName = "/sati.central.v1.Orchestrator/GetAssemblyLineStatus"
 	Orchestrator_AdvanceLifecycle_FullMethodName      = "/sati.central.v1.Orchestrator/AdvanceLifecycle"
 	Orchestrator_UpdateSkill_FullMethodName           = "/sati.central.v1.Orchestrator/UpdateSkill"
+	Orchestrator_ReconcileKnowledge_FullMethodName    = "/sati.central.v1.Orchestrator/ReconcileKnowledge"
 )
 
 // OrchestratorClient is the client API for Orchestrator service.
@@ -98,6 +99,9 @@ type OrchestratorClient interface {
 	// UpdateSkill proposes a new version of an agent's skill.
 	// Must pass Safety Rail. Returns a MerkleProof on success.
 	UpdateSkill(ctx context.Context, in *SkillUpdateRequest, opts ...grpc.CallOption) (*MerkleProof, error)
+	// ReconcileKnowledge proposes a local skill for global station reconciliation.
+	// Returns a stream of ConsensusEvents (Proposed → Voting → Reconciled/Rejected).
+	ReconcileKnowledge(ctx context.Context, in *ReconciliationProposal, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ConsensusEvent], error)
 }
 
 type orchestratorClient struct {
@@ -277,6 +281,25 @@ func (c *orchestratorClient) UpdateSkill(ctx context.Context, in *SkillUpdateReq
 	return out, nil
 }
 
+func (c *orchestratorClient) ReconcileKnowledge(ctx context.Context, in *ReconciliationProposal, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ConsensusEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Orchestrator_ServiceDesc.Streams[1], Orchestrator_ReconcileKnowledge_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ReconciliationProposal, ConsensusEvent]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Orchestrator_ReconcileKnowledgeClient = grpc.ServerStreamingClient[ConsensusEvent]
+
 // OrchestratorServer is the server API for Orchestrator service.
 // All implementations must embed UnimplementedOrchestratorServer
 // for forward compatibility.
@@ -331,6 +354,9 @@ type OrchestratorServer interface {
 	// UpdateSkill proposes a new version of an agent's skill.
 	// Must pass Safety Rail. Returns a MerkleProof on success.
 	UpdateSkill(context.Context, *SkillUpdateRequest) (*MerkleProof, error)
+	// ReconcileKnowledge proposes a local skill for global station reconciliation.
+	// Returns a stream of ConsensusEvents (Proposed → Voting → Reconciled/Rejected).
+	ReconcileKnowledge(*ReconciliationProposal, grpc.ServerStreamingServer[ConsensusEvent]) error
 	mustEmbedUnimplementedOrchestratorServer()
 }
 
@@ -388,6 +414,9 @@ func (UnimplementedOrchestratorServer) AdvanceLifecycle(context.Context, *Lifecy
 }
 func (UnimplementedOrchestratorServer) UpdateSkill(context.Context, *SkillUpdateRequest) (*MerkleProof, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSkill not implemented")
+}
+func (UnimplementedOrchestratorServer) ReconcileKnowledge(*ReconciliationProposal, grpc.ServerStreamingServer[ConsensusEvent]) error {
+	return status.Error(codes.Unimplemented, "method ReconcileKnowledge not implemented")
 }
 func (UnimplementedOrchestratorServer) mustEmbedUnimplementedOrchestratorServer() {}
 func (UnimplementedOrchestratorServer) testEmbeddedByValue()                      {}
@@ -691,6 +720,17 @@ func _Orchestrator_UpdateSkill_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orchestrator_ReconcileKnowledge_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReconciliationProposal)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(OrchestratorServer).ReconcileKnowledge(m, &grpc.GenericServerStream[ReconciliationProposal, ConsensusEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Orchestrator_ReconcileKnowledgeServer = grpc.ServerStreamingServer[ConsensusEvent]
+
 // Orchestrator_ServiceDesc is the grpc.ServiceDesc for Orchestrator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -763,6 +803,11 @@ var Orchestrator_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SubmitProposal",
 			Handler:       _Orchestrator_SubmitProposal_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ReconcileKnowledge",
+			Handler:       _Orchestrator_ReconcileKnowledge_Handler,
 			ServerStreams: true,
 		},
 	},

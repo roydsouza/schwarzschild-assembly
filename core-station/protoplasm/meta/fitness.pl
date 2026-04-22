@@ -13,34 +13,29 @@
  */
 
 %% report_substrate_fitness is det.
-%
-% Calculates current fitness and reports it via the OTel bridge.
 report_substrate_fitness :-
     calculate_fitness(Metrics),
-    emit_metrics_batch(Metrics).
+    otel_bridge:emit_metrics_batch(Metrics).
 
 %% calculate_fitness(-Metrics) is det.
-%
-% Computes the fitness footprint of the Prolog substrate.
 calculate_fitness(Metrics) :-
-    % 1. Skill Diversity (Count of runtime predicates)
+    % 1. Skill Diversity
     findall(P/A, (current_predicate(P/A), \+ predicate_property(P/A, built_in)), AllPreds),
     length(AllPreds, SkillCount),
     
-    % 2. Baseline Latency (Sampled)
-    % Use a goal that is guaranteed to be grounded and exists.
-    (   measure_performance(introspect:inspect_predicate(user:foo, _), Latency, Samples), Samples > 0
+    % 2. Baseline Latency
+    (   measure_performance(introspect:inspect_predicate(user:foo, _), Latency, _Samples)
     ->  true
-    ;   Latency = 0.001 % Default floor
+    ;   Latency = 0.001
     ),
     
-    % 3. Compute Composite Fitness Score
+    % 3. Composite Fitness
     LatencyScore is max(0.0, 1.0 - Latency / 1.0),
     DiversityScore is min(1.0, SkillCount / 10.0),
     FitnessScore is (LatencyScore + DiversityScore) / 2.0,
 
     Metrics = json{
-        'aethereum_spine.prolog.substrate_fitness_score': FitnessScore,
-        'aethereum_spine.prolog.skill_diversity_total': SkillCount,
-        'aethereum_spine.prolog.substrate_avg_latency_ms': Latency
+        'sati_central.prolog.substrate_fitness_score': FitnessScore,
+        'sati_central.prolog.skill_diversity_total': SkillCount,
+        'sati_central.prolog.substrate_avg_latency_ms': Latency
     }.

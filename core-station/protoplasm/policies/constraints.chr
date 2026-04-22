@@ -3,32 +3,40 @@
 ]).
 
 :- use_module(library(chr)).
+:- use_module(invariants).
 
-/** <module> Safety Rail CHR Policy
+/** <module> Safety Rail CHR Policy (STASIS Tier 2)
  * 
  * Defines declarative constraints on the shape of Prolog clauses.
+ * Tier 2 rules may only call Tier 1 predicates (from invariants.pl).
  */
 
-:- chr_constraint check_constraints/1, banned_predicate/1.
+:- chr_constraint check_constraints/1.
 
-% 1. Body Scanning
-check_constraints((_Head :- Body)) :- !,
-    find_banned(Body, BannedList),
-    forall(member(P, BannedList), banned_predicate(P)).
-check_constraints(_).
-
-% 2. Trigger - MUST BE REDEFINED AS A SIMPLIFICATION RULE TO ENSURE EXECUTION
-banned_predicate(P) <=>
-    format(atom(Msg), 'banned predicate usage detected in body: ~w', [P]),
+% violation(P) :- ...
+% A simple predicate to throw the exception immediately.
+violation(P) :-
+    format(atom(Msg), 'banned predicate usage detected: ~w', [P]),
     throw(safety_violation(Msg)).
 
-find_banned(Body, Banned) :-
-    findall(P, (member(P, [shell, system, assert, retract, asserta, assertz]), 
-                contains_predicate(Body, P)), Banned).
+% rules
+% This rule MUST fire. We add a 'true' guard to ensure it's always active.
+check_constraints(Term) <=> true | 
+    ( Term = (_H :- Body) -> scan_body(Body) ; scan_body(Term) ).
 
-contains_predicate(P, P) :- !.
-contains_predicate((A, _), P) :- contains_predicate(A, P), !.
-contains_predicate((_, B), P) :- contains_predicate(B, P), !.
-contains_predicate((A; _), P) :- contains_predicate(A, P), !.
-contains_predicate((_; B), P) :- contains_predicate(B, P), !.
-contains_predicate(\+ A, P) :- contains_predicate(A, P), !.
+% scan_body/1 is a standard Prolog predicate called by the CHR rule.
+% We define it here to ensure it's available in the module scope.
+scan_body(Term) :-
+    ( is_banned(Term) -> violation(Term) ; true ),
+    ( compound(Term) -> 
+        Term =.. [_F|Args],
+        maplist(scan_body, Args)
+      ; true
+    ).
+
+is_banned(Var) :- var(Var), !, fail.
+is_banned(Term) :- 
+    % Handle module qualification (e.g., system:shell)
+    ( Term = (_M:T) -> (compound(T) -> functor(T, F, _) ; F = T) ; ( compound(Term) -> functor(Term, F, _) ; F = Term ) ),
+    % Check against Tier 1
+    catch(invariants:banned_operation(F), _, fail).
