@@ -284,7 +284,7 @@ Tier boundaries are not conventions — they are mechanically enforced.
 
 ### Layer 1: Syntactic linter (pre-submit time)
 
-`scripts/validate-stasis-tier1.pl` runs during `scripts/pre-submit.sh`. It rejects
+`core-station/bridge/validate-stasis-tier1.pl` runs during `core-station/bridge/pre-submit.sh`. It rejects
 any predicate tagged `stasis_tier(1, ...)` that violates Datalog syntax restrictions.
 
 ### Layer 2: Safety Rail Z3 policy (proposal time)
