@@ -1,3 +1,8 @@
+> **DEPRECATED (2026-04-30):** This directory has been superseded by [`dark-factory/`](../dark-factory/CONTEXT.md).
+> The factory core (STASIS, Z3 Safety Rail, Aethereum-Spine) has been migrated to `dark-factory/factory/`.
+> Lifecycle scripts (dock.sh, launch.sh, pre-submit.sh) are in `dark-factory/factory/bridge/`.
+> This directory is kept for reference during transition only. Do not do new work here.
+
 # Schwarzschild Assembly: Automated Production for High-Integrity Systems
 
 A centralized environment for the automated assembly and formal verification of high-integrity software systems.

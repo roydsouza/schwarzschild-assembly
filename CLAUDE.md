@@ -1,3 +1,7 @@
+> **DEPRECATED (2026-04-30):** This assembly has been superseded by `dark-factory/`.
+> The factory core is now at `dark-factory/factory/`. The process law is at `dark-factory/CONTEXT.md`.
+> Do not do new work in schwarzschild-assembly — redirect to `dark-factory/assembly-lines/`.
+
 # Schwarzschild Assembly: Claude System Context
 
 ## Scope Boundary
@@ -73,7 +77,7 @@ Before calling any phase COMPLETE in a briefing:
 - [ ] All new Prolog tests pass: `swipl -g "run_tests, halt." <test_file>`
 - [ ] All Rust tests pass: `cargo test --features tier1`
 - [ ] Go builds clean: `go build ./...`
-- [ ] STASIS Tier 1 validation passes: `swipl -l bridge/validate-stasis-tier1.pl ...`
+- [ ] STASIS Tier 1 validation passes: `swipl -l core-station/bridge/validate-stasis-tier1.pl ...`
 - [ ] Anatomy check passes for all affected factory modules
 - [ ] Briefing contains full verbatim `pre-submit.sh` output in `## Verification Output`
 - [ ] Briefing contains GATE-PASS block from `python3 forge/gate.py pre-submit`
@@ -83,7 +87,7 @@ Before calling any phase COMPLETE in a briefing:
 ## Current State (as of 2026-04-22)
 
 The factory is operational. Foundation cleanup (root `TASKS.md` fnd-001 through fnd-008)
-is in progress. No spacecraft is currently docked.
+is complete. No spacecraft is currently docked.
 
 **What's ready:**
 - STASIS three-tier architecture (Tier 1 linter, Tier 2 CHR, Tier 3 meta)
